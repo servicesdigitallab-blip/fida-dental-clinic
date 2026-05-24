@@ -116,14 +116,17 @@ export default function Hero() {
               </div>
             </a>
 
-            <button 
-              className="flex items-center gap-3 px-6 py-4 rounded-full font-bold text-slate-700 hover:text-primary hover:bg-slate-100/80 transition-all duration-300"
+            <a 
+              href="https://www.youtube.com/watch?v=XhBw0yU9_6s" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 px-6 py-4 rounded-full font-bold text-slate-700 hover:text-primary hover:bg-slate-100/80 transition-all duration-300"
             >
               <div className="w-10 h-10 bg-white shadow-md rounded-full flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
                 <Play className="w-4 h-4 fill-primary" />
               </div>
               <span>Watch Video</span>
-            </button>
+            </a>
           </motion.div>
 
           {/* Patient Reviews Badging */}

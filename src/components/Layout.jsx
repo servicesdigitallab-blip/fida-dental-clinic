@@ -96,25 +96,6 @@ export default function Layout({ children }) {
       } else {
         setIsSticky(false);
       }
-
-      // Track active section using 1/3 viewport offset
-      const scrollPosition = window.scrollY + window.innerHeight / 3;
-      
-      const currentSection = sections.find((section) => {
-        const element = document.getElementById(section.id);
-        if (element) {
-          const top = element.offsetTop;
-          const height = element.offsetHeight;
-          return scrollPosition >= top && scrollPosition < top + height;
-        }
-        return false;
-      });
-
-      if (currentSection) {
-        setActiveSection(currentSection.id);
-      } else if (window.scrollY < 100) {
-        setActiveSection('home');
-      }
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -122,8 +103,36 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Smooth scroll initialization
+  // Track active section using IntersectionObserver to prevent layout thrashing on mobile
   useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -40% 0px',
+      threshold: 0,
+    };
+
+    const observerCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    sections.forEach((section) => {
+      const element = document.getElementById(section.id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Smooth scroll initialization (Desktop only to prevent touch scrolling lag on mobile)
+  useEffect(() => {
+    if (window.innerWidth < 1024) return;
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
