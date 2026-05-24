@@ -582,7 +582,7 @@ export default function Layout({ children }) {
           {/* Right Action Menu */}
           <div className="flex items-center gap-4 relative z-10">
             <motion.a 
-              href="tel:+923001234567" 
+              href="tel:+923214043448" 
               onClick={handlePhoneClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -611,7 +611,7 @@ export default function Layout({ children }) {
               ))}
 
               <Phone className="w-4 h-4 group-hover:rotate-[18deg] transition-transform duration-300" />
-              <span>+92 300 1234567</span>
+              <span>+92 321 4043448</span>
             </motion.a>
             
             <button 
@@ -684,7 +684,7 @@ export default function Layout({ children }) {
               
               <div className="mt-auto flex flex-col gap-3">
                 <motion.a 
-                  href="tel:+923001234567" 
+                  href="tel:+923214043448" 
                   onClick={handlePhoneClick}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -748,7 +748,7 @@ export default function Layout({ children }) {
             </p>
             <div className="mt-4 text-white font-semibold flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary" />
-              <span>+92 300 1234567</span>
+              <span>+92 321 4043448</span>
             </div>
           </div>
         </div>
