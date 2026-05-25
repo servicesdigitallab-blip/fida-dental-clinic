@@ -95,7 +95,7 @@ export default function Hero() {
             variants={fadeUpVariants}
             className="text-base sm:text-lg text-slate-500 max-w-xl leading-relaxed"
           >
-            WAQAS DENTAL CLINIC is dedicated to providing exceptional dental services with care, comfort, and advanced technology. Your smile is our main goal.
+            FIDA DENTAL CLINIC is dedicated to providing exceptional dental services with care, comfort, and advanced technology. Your smile is our main goal.
           </motion.p>
 
           {/* Call To Actions */}
@@ -185,7 +185,7 @@ export default function Hero() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             src="/dentist_hero.png" 
-            alt="3D Dentist WAQAS DENTAL CLINIC" 
+            alt="3D Dentist FIDA DENTAL CLINIC" 
             className="absolute bottom-4 max-h-[110%] object-contain drop-shadow-[0_20px_50px_rgba(0,102,255,0.25)] select-none pointer-events-none z-10"
           />
 

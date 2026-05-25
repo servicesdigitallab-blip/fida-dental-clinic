@@ -33,7 +33,7 @@ const reviewsData = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100',
     rating: 5,
     date: '2 days ago',
-    text: 'I had an amazing experience at WAQAS DENTAL CLINIC. The staff is so professional and the clinic is equipped with the latest technology. My smile has never looked better!',
+    text: 'I had an amazing experience at FIDA DENTAL CLINIC. The staff is so professional and the clinic is equipped with the latest technology. My smile has never looked better!',
   },
   {
     name: 'Ayesha Malik',
@@ -57,7 +57,7 @@ const reviewsData = [
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100',
     rating: 4.3,
     date: '2 weeks ago',
-    text: 'The best dental care clinic in Pakistan! They truly care about their patients. My braces journey has been so comfortable. Thank you WAQAS DENTAL CLINIC team!',
+    text: 'The best dental care clinic in Pakistan! They truly care about their patients. My braces journey has been so comfortable. Thank you FIDA DENTAL CLINIC team!',
   },
   {
     name: 'Hamza Ali',
@@ -73,7 +73,7 @@ const reviewsData = [
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100',
     rating: 4.8,
     date: '1 month ago',
-    text: 'Amazing experience! The root canal treatment was completely pain-free. I highly recommend WAQAS DENTAL CLINIC.',
+    text: 'Amazing experience! The root canal treatment was completely pain-free. I highly recommend FIDA DENTAL CLINIC.',
   },
 ];
 
@@ -246,7 +246,7 @@ export default function Reviews() {
             </span>
           </h2>
           <p className="text-sm sm:text-base text-slate-500 max-w-xl leading-relaxed mt-2">
-            Real stories from real patients who trusted WAQAS DENTAL CLINIC for their smiles. Your satisfaction is our greatest achievement. 💙
+            Real stories from real patients who trusted FIDA DENTAL CLINIC for their smiles. Your satisfaction is our greatest achievement. 💙
           </p>
         </motion.div>
 
