@@ -399,7 +399,7 @@ export default function Layout({ children }) {
               <div className={`text-xl font-bold tracking-tight leading-none transition-colors duration-500 ${
                 !isSticky ? 'text-slate-800' : 'text-white'
               }`}>
-                FIDA <span className={`transition-colors duration-500 ${
+                WAQAS <span className={`transition-colors duration-500 ${
                   !isSticky ? 'text-primary' : 'text-secondary'
                 }`}>DENTAL</span>
               </div>
@@ -661,7 +661,7 @@ export default function Layout({ children }) {
                   <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-secondary fill-secondary/10" strokeWidth="2">
                     <path d="M7 3C9 3 10 4.5 12 4.5C14 4.5 15 3 17 3C19 3 21 5 21 8.5C21 12 19 14.5 18 16.5C17.2 18.1 16 19.5 15.5 21C15 22.5 13.5 22.5 12 21C10.5 22.5 9 22.5 8.5 21C8 19.5 6.8 18.1 6 16.5C5 14.5 3 12 3 8.5C3 5 5 3 7 3Z" />
                   </svg>
-                  <span>FIDA DENTAL</span>
+                  <span>WAQAS DENTAL</span>
                 </span>
                 <motion.button 
                   whileHover={{ rotate: 90, scale: 1.1 }}
@@ -725,7 +725,7 @@ export default function Layout({ children }) {
                   <path d="M12 2C8.5 2 6 4.5 6 8c0 3.5 2.5 5 4 8.5 1 2.3.5 3.5 2 3.5s1-1.2 2-3.5c1.5-3.5 4-5 4-8.5 0-3.5-2.5-6-6-6zm0 8.5c-.8 0-1.5-.7-1.5-1.5S11.2 7.5 12 7.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5z" />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-white tracking-tight">FIDA DENTAL CLINIC</span>
+              <span className="text-xl font-bold text-white tracking-tight">WAQAS DENTAL CLINIC</span>
             </div>
             <p className="text-sm text-slate-400">Creating beautifully confident smiles using state-of-the-art dental technology and personalized premium treatments.</p>
           </div>
@@ -762,7 +762,7 @@ export default function Layout({ children }) {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-          <p>© 2026 FIDA DENTAL CLINIC. Designed with cinematic experience. All rights reserved.</p>
+          <p>© 2026 WAQAS DENTAL CLINIC. Designed with cinematic experience. All rights reserved.</p>
         </div>
       </footer>
     </div>

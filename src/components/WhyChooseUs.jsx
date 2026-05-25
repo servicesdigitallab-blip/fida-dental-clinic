@@ -146,7 +146,7 @@ export default function WhyChooseUs() {
             <span>Why Choose Us</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-800 leading-tight">
-            Why Choose <span className="text-primary">FIDA DENTAL CLINIC?</span>
+            Why Choose <span className="text-primary">WAQAS DENTAL CLINIC?</span>
           </h2>
           <p className="text-sm sm:text-base text-slate-500 max-w-xl leading-relaxed mt-2">
             We combine advanced technology, skilled professionals, and a patient-first approach to deliver exceptional dental care.
