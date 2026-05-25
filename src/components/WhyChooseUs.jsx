@@ -372,24 +372,19 @@ export default function WhyChooseUs() {
                       Thank you, <span className="font-semibold text-primary">{formData.name}</span>. Our representative will contact you shortly to confirm your schedule.
                     </p>
 
-                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">
-                      Confirm your order
-                    </h4>
+                    <div className="flex flex-col items-center mb-6">
+                      <span className="text-[10px] text-slate-400 font-medium mb-3">Click to call & confirm instantly</span>
                       
-                    <a 
-                      href="tel:+923214043448" 
-                      className="animate-ring-vibrate group relative flex flex-col items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all duration-300 w-full max-w-[260px] shadow-sm hover:shadow-md cursor-pointer mb-6"
-                    >
-                      <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white shadow-lg shadow-primary/30 animate-pulse-glow">
-                        <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-75 pointer-events-none" />
-                        <Phone className="w-5 h-5 animate-ring-vibrate" />
-                      </div>
+                      <a 
+                        href="tel:+923214043448" 
+                        className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary-dark hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer mb-3"
+                        title="Call +92 321 4043448"
+                      >
+                        <Phone className="w-6 h-6 fill-white animate-phone-ring" />
+                      </a>
                       
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-slate-400 font-medium">Click to call & confirm instantly</span>
-                        <span className="text-xs font-bold text-primary tracking-wide mt-0.5">+92 321 4043448</span>
-                      </div>
-                    </a>
+                      <span className="text-xs font-bold text-primary tracking-wide">+92 321 4043448</span>
+                    </div>
 
                     <button
                       onClick={() => {
