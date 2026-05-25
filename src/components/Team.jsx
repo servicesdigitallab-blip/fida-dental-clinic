@@ -100,8 +100,8 @@ export default function Team() {
             className="text-center w-full lg:w-1/3 flex flex-col items-center gap-3"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
-            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-2 px-4 py-1.5 bg-primary-light text-primary rounded-full text-xs font-bold uppercase tracking-wider border border-primary/5">
               <Award className="w-3.5 h-3.5" />
@@ -121,8 +121,8 @@ export default function Team() {
           className="text-center mb-16 flex flex-col items-center gap-3"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.8, delay: 0.1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-800 leading-tight">
             Meet the Experts Behind <br />
@@ -155,8 +155,8 @@ export default function Team() {
                   layout
                   initial={{ opacity: 0, y: 50, scale: 0.95 }}
                   whileInView={{ opacity: 1, y: 0, scale: isUsman ? 1.06 : 1 }}
-                  viewport={{ once: false }}
-                  transition={{ duration: 0.8, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
                   onMouseMove={(e) => handleMouseMove(e, cardEl)}
                   onMouseLeave={() => handleMouseLeave(cardEl)}
                   ref={el => cardEl = el}

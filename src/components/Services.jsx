@@ -82,7 +82,7 @@ export default function Services() {
           className="text-center mb-16 flex flex-col items-center gap-4 animate-fade-in"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center gap-2 px-4 py-1.5 bg-primary-light text-primary rounded-full text-xs font-bold uppercase tracking-wider border border-primary/5">
@@ -136,8 +136,8 @@ export default function Services() {
                   key={service.title}
                   initial={{ opacity: 0, y: 50, scale: 0.95 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: false }}
-                  transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
                   onMouseMove={(e) => handleMouseMove(e, cardEl)}
                   onMouseLeave={() => handleMouseLeave(cardEl)}
                   ref={el => cardEl = el}
@@ -192,7 +192,7 @@ export default function Services() {
           className="mt-16 flex justify-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
           <a 

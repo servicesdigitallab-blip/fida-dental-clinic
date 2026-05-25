@@ -210,8 +210,8 @@ export default function BeforeAfter() {
           className="text-center mb-16 flex flex-col items-center gap-4"
           initial={{ opacity: 0, y: 35 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 px-4 py-1.5 bg-primary-light text-primary rounded-full text-xs font-bold uppercase tracking-wider border border-primary/5">
             <Sparkles className="w-3.5 h-3.5" />
@@ -279,8 +279,8 @@ export default function BeforeAfter() {
               key={idx}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false }}
-              transition={{ duration: 0.6, delay: idx * 0.1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.05 }}
               className="interactive-card glass-card p-6 rounded-2xl border border-white hover:border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 flex flex-col items-center text-center"
             >
               <div className="text-3xl sm:text-4xl font-extrabold text-primary mb-2">

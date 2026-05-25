@@ -138,7 +138,7 @@ export default function WhyChooseUs() {
           className="text-center mb-16 flex flex-col items-center gap-4"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: '-100px' }}
+          viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center gap-2 px-4 py-1.5 bg-primary-light text-primary rounded-full text-xs font-bold uppercase tracking-wider border border-primary/5">
@@ -161,8 +161,8 @@ export default function WhyChooseUs() {
             className="lg:col-span-4 relative flex justify-center items-center h-[350px] lg:h-[450px]"
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: false }}
-            transition={{ duration: 1.2 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
             {/* Background glowing circle */}
             <div className="absolute w-[80%] aspect-square bg-gradient-to-tr from-primary/10 to-sky-300/10 rounded-full animate-spin-slow blur-sm" />
@@ -185,8 +185,8 @@ export default function WhyChooseUs() {
                 key={feat.title}
                 initial={{ opacity: 0, x: -60, filter: 'blur(8px)' }}
                 whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                viewport={{ once: false }}
-                transition={{ duration: 0.6, delay: idx * 0.12 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: idx * 0.05 }}
                 className="interactive-card flex gap-4 p-5 rounded-2xl glass-card border border-white/60 hover:border-blue-500/20 hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1 transition-all duration-300 text-left"
               >
                 <div className="w-11 h-11 shrink-0 bg-white shadow-md rounded-xl flex items-center justify-center border border-slate-50 animate-float-fast">
@@ -206,7 +206,7 @@ export default function WhyChooseUs() {
             className="lg:col-span-4"
             initial={{ opacity: 0, x: 60 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
             <div className="glass-card-dark p-6 sm:p-8 rounded-[32px] border border-blue-500/10 shadow-2xl relative overflow-hidden">

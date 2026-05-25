@@ -110,8 +110,8 @@ function ReviewCard({ review, idx }) {
       onMouseLeave={() => handleMouseLeave(cardEl)}
       initial={{ opacity: 0, y: 35 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: false }}
-      transition={{ duration: 0.6, delay: idx * 0.1, ease: 'easeOut' }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: idx * 0.1, ease: 'easeOut' }}
       className="glass-card p-6 rounded-[28px] border border-white hover:border-blue-500/20 transition-all duration-300 flex flex-col gap-4 text-left cursor-pointer"
       style={{ transformStyle: 'preserve-3d', transition: 'box-shadow 0.3s, border-color 0.3s, transform 0.3s' }}
     >
@@ -171,8 +171,8 @@ function RatingBar({ stars, percentage, delay }) {
           initial={{ scaleX: 0 }}
           whileInView={{ scaleX: percentage / 100 }}
           style={{ originX: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
           className="absolute left-0 top-0 bottom-0 right-0 bg-gradient-to-r from-primary to-secondary rounded-full shadow-[0_0_10px_rgba(0,102,255,0.3)]"
         />
       </div>
@@ -229,8 +229,8 @@ export default function Reviews() {
           className="text-center mb-16 flex flex-col items-center gap-4"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 px-4 py-1.5 bg-primary-light text-primary rounded-full text-xs font-bold uppercase tracking-wider border border-primary/5">
             <Smile className="w-3.5 h-3.5" />
@@ -254,8 +254,8 @@ export default function Reviews() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
           className="glass-card-dark p-6 sm:p-8 rounded-[32px] border border-blue-500/10 shadow-2xl mb-16 grid grid-cols-1 md:grid-cols-12 gap-8 items-center max-w-5xl mx-auto"
         >
           {/* Left panel: 4.8 rating */}
@@ -297,8 +297,8 @@ export default function Reviews() {
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-20 flex flex-wrap items-center justify-center gap-6 bg-white py-4 px-8 rounded-full border border-slate-100 shadow-xl shadow-blue-500/5 max-w-4xl mx-auto"
         >
           {/* Overlapping avatars */}
