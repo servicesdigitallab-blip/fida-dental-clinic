@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Sparkles, Smile, DollarSign, Calendar, Clock, User, Phone, Mail, Award, CheckCircle } from 'lucide-react';
+import { Sparkles, Smile, DollarSign, Calendar, User, Phone, Mail, Award, CheckCircle } from 'lucide-react';
 
 const features = [
   {
@@ -25,16 +25,47 @@ const features = [
   },
 ];
 
+const getInitialTime = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  if (hour < 20) return 'evening';
+  return 'morning';
+};
+
+const getLocalDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getMinDateString = () => {
+  const today = new Date();
+  const currentHour = today.getHours();
+  if (currentHour >= 20) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return getLocalDateString();
+};
+
 export default function WhyChooseUs() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     service: '',
-    date: '',
-    time: '',
+    date: getMinDateString(),
+    time: getInitialTime(),
     message: ''
   });
+
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +81,48 @@ export default function WhyChooseUs() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      const todayStr = getLocalDateString();
+      const minDateStr = getMinDateString();
+
+      // 1. Ensure selected date is not prior to the minimum allowed date
+      if (updated.date && updated.date < minDateStr) {
+        updated.date = minDateStr;
+      }
+
+      // 2. If date is today, ensure time slot is valid
+      if (updated.date === todayStr && updated.time) {
+        const currentHour = new Date().getHours();
+        let isSlotValid = true;
+
+        if (updated.time === 'morning' && currentHour >= 12) {
+          isSlotValid = false;
+        } else if (updated.time === 'afternoon' && currentHour >= 17) {
+          isSlotValid = false;
+        } else if (updated.time === 'evening' && currentHour >= 20) {
+          isSlotValid = false;
+        }
+
+        if (!isSlotValid) {
+          // Find next available slot for today
+          let nextAvailable = '';
+          if (currentHour < 12) {
+            nextAvailable = 'morning';
+          } else if (currentHour < 17) {
+            nextAvailable = 'afternoon';
+          } else if (currentHour < 20) {
+            nextAvailable = 'evening';
+          }
+          
+          updated.time = nextAvailable;
+        }
+      }
+
+      return updated;
+    });
   };
 
   return (
@@ -222,9 +294,24 @@ export default function WhyChooseUs() {
                           className="w-full px-3 py-3 bg-white/60 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all text-slate-500"
                         >
                           <option value="">Select Time</option>
-                          <option value="morning">Morning</option>
-                          <option value="afternoon">Afternoon</option>
-                          <option value="evening">Evening</option>
+                          <option 
+                            value="morning"
+                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 12}
+                          >
+                            Morning
+                          </option>
+                          <option 
+                            value="afternoon"
+                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 17}
+                          >
+                            Afternoon
+                          </option>
+                          <option 
+                            value="evening"
+                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 20}
+                          >
+                            Evening
+                          </option>
                         </select>
                       </div>
                     </div>
@@ -237,6 +324,7 @@ export default function WhyChooseUs() {
                         value={formData.date}
                         onChange={handleInputChange}
                         required
+                        min={getMinDateString()}
                         className="w-full pl-10 pr-4 py-3 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all text-slate-400"
                       />
                     </div>
@@ -283,12 +371,40 @@ export default function WhyChooseUs() {
                     <p className="text-sm text-slate-500 max-w-[260px] leading-relaxed mb-6">
                       Thank you, <span className="font-semibold text-primary">{formData.name}</span>. Our representative will contact you shortly to confirm your schedule.
                     </p>
+
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">
+                      Confirm your order
+                    </h4>
+                      
+                    <a 
+                      href="tel:+923214043448" 
+                      className="animate-ring-vibrate group relative flex flex-col items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all duration-300 w-full max-w-[260px] shadow-sm hover:shadow-md cursor-pointer mb-6"
+                    >
+                      <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white shadow-lg shadow-primary/30 animate-pulse-glow">
+                        <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-75 pointer-events-none" />
+                        <Phone className="w-5 h-5 animate-ring-vibrate" />
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-slate-400 font-medium">Click to call & confirm instantly</span>
+                        <span className="text-xs font-bold text-primary tracking-wide mt-0.5">+92 321 4043448</span>
+                      </div>
+                    </a>
+
                     <button
                       onClick={() => {
                         setFormSubmitted(false);
-                        setFormData({ name: '', phone: '', email: '', service: '', date: '', time: '', message: '' });
+                        setFormData({ 
+                          name: '', 
+                          phone: '', 
+                          email: '', 
+                          service: '', 
+                          date: getMinDateString(), 
+                          time: getInitialTime(), 
+                          message: '' 
+                        });
                       }}
-                      className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-colors"
+                      className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
                     >
                       Book Another
                     </button>
