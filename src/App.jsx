@@ -7,20 +7,25 @@ import BeforeAfter from './components/BeforeAfter';
 import Reviews from './components/Reviews';
 import Team from './components/Team';
 import Pricing from './components/Pricing';
+import WarningPopup from './components/WarningPopup';
 
 function App() {
   return (
-    <Layout>
-      <Hero />
-      <Services />
-      <WhyChooseUs />
-      <BeforeAfter />
-      <Reviews />
-      <Team />
-      <Pricing />
-    </Layout>
+    <>
+      <WarningPopup />
+      <Layout>
+        <Hero />
+        <Services />
+        <WhyChooseUs />
+        <BeforeAfter />
+        <Reviews />
+        <Team />
+        <Pricing />
+      </Layout>
+    </>
   );
 }
 
 export default App;
+
 
