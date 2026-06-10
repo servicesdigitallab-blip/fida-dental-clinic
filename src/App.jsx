@@ -6,6 +6,7 @@ import WhyChooseUs from './components/WhyChooseUs';
 import BeforeAfter from './components/BeforeAfter';
 import Reviews from './components/Reviews';
 import Team from './components/Team';
+import Pricing from './components/Pricing';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <BeforeAfter />
       <Reviews />
       <Team />
+      <Pricing />
     </Layout>
   );
 }
