@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Bot } from 'lucide-react';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const CALENDAR_API_URL = 'https://script.google.com/macros/s/AKfycbwV1RdADrkMmuWA5DesWU14aC4osMz_S0-hO0XERJkr4N1t-EAcJB4BwszG0fawl2N3Gw/exec';
 
 const CLINIC_SERVICES = [
   'Teeth Cleaning',
@@ -82,7 +83,7 @@ export default function ChatBot() {
 
     const userMessage = input.trim();
     setInput('');
-    const updatedMessages = [
+    let updatedMessages = [
       ...messages,
       { role: 'user', content: userMessage },
     ];
@@ -90,54 +91,98 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: updatedMessages.map((msg) => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }],
-          })),
-          generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 200,
-          },
-        }),
-      });
+      let retryCount = 0;
+      let success = false;
+      let botReply = '';
 
-      const data = await response.json();
+      while (!success && retryCount < 3) {
+        const response = await fetch(GEMINI_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: updatedMessages.map((msg) => ({
+              role: msg.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: msg.content }],
+            })),
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 200,
+            },
+          }),
+        });
 
-      let botReply =
-        'Sorry, I could not process that right now. Please try again.';
+        const data = await response.json();
 
-      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        botReply = data.candidates[0].content.parts[0].text;
+        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          botReply = data.candidates[0].content.parts[0].text;
 
-        // Extract booking data if present
-        const bookingMatch = botReply.match(
-          /###BOOKING###([\s\S]*?)###END###/
-        );
-        if (bookingMatch) {
-          try {
-            const bookingData = JSON.parse(bookingMatch[1].trim());
-            const bookings = JSON.parse(
-              localStorage.getItem('fida_bookings') || '[]'
-            );
-            bookings.push({
-              ...bookingData,
-              bookedAt: new Date().toISOString(),
-            });
-            localStorage.setItem('fida_bookings', JSON.stringify(bookings));
-          } catch (e) {
-            console.error('Failed to parse booking data:', e);
+          // Extract booking data if present
+          const bookingMatch = botReply.match(
+            /###BOOKING###([\s\S]*?)###END###/
+          );
+          if (bookingMatch) {
+            try {
+              const bookingData = JSON.parse(bookingMatch[1].trim());
+
+              // Call Google Apps Script to check availability and book
+              const calendarResponse = await fetch(CALENDAR_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                  action: 'book',
+                  ...bookingData,
+                }),
+              });
+
+              const calendarResult = await calendarResponse.json();
+
+              if (calendarResult.success) {
+                // Booking succeeded on Google Calendar
+                const bookings = JSON.parse(
+                  localStorage.getItem('fida_bookings') || '[]'
+                );
+                bookings.push({
+                  ...bookingData,
+                  eventId: calendarResult.eventId,
+                  bookedAt: new Date().toISOString(),
+                });
+                localStorage.setItem('fida_bookings', JSON.stringify(bookings));
+
+                // Remove hidden data block from visible message
+                botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
+                success = true;
+              } else {
+                // Booking failed because slot is taken
+                // Inject system correction and query Gemini again
+                updatedMessages = [
+                  ...updatedMessages,
+                  {
+                    role: 'assistant',
+                    content: botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim(),
+                  },
+                  {
+                    role: 'user',
+                    content: `System notification: The appointment time slot on ${bookingData.date} at ${bookingData.time} is already booked on Google Calendar. Please politely tell the user that this time slot is unavailable and ask them to select another date or time.`,
+                  },
+                ];
+                retryCount++;
+                continue;
+              }
+            } catch (e) {
+              console.error('Failed to parse or process booking:', e);
+              botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
+              success = true;
+            }
+          } else {
+            success = true;
           }
-          // Remove hidden data block from visible message
-          botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
+        } else {
+          botReply = 'Sorry, I could not process that right now. Please try again.';
+          if (data.error) {
+            console.error('Gemini API error:', data.error);
+          }
+          success = true;
         }
-      } else if (data.error) {
-        botReply = 'Sorry, there seems to be a connection issue. Could you try again?';
-        console.error('Gemini API error:', data.error);
       }
 
       setMessages((prev) => [
