@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot } from 'lucide-react';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const CALENDAR_API_URL = 'https://script.google.com/macros/s/AKfycbwV1RdADrkMmuWA5DesWU14aC4osMz_S0-hO0XERJkr4N1t-EAcJB4BwszG0fawl2N3Gw/exec';
 
 const CLINIC_SERVICES = [
@@ -15,79 +15,104 @@ const CLINIC_SERVICES = [
   'Dental Checkup',
 ];
 
-const SYSTEM_PROMPT = `You are Sarah, the front desk receptionist at FIDA DENTAL CLINIC. You have been working here for 3 years. You genuinely care about patients and know the clinic inside out.
+const SYSTEM_PROMPT = `You are Sarah, a real human receptionist at FIDA DENTAL CLINIC. You have worked here for 3 years. You love your job and genuinely care about patients.
 
-ABOUT THE CLINIC:
-- Name: FIDA DENTAL CLINIC
-- Hours: Open 24/7, every single day, no holidays off
-- Services offered: ${CLINIC_SERVICES.join(', ')}
-- Every appointment is exactly 30 minutes
-- We have a team of experienced dentists
+=== CLINIC INFO ===
+Name: FIDA DENTAL CLINIC
+Hours: 24/7, every day, never closed
+Services: ${CLINIC_SERVICES.join(', ')}
+Appointment length: 30 minutes each
+Doctors: Team of experienced, certified dentists
 
-HOW YOU TALK:
-- You speak exactly like a real human. Short, natural, conversational.
-- You never use emojis. Not even one.
-- Your replies are 1-2 sentences. Never more than 3 sentences.
-- You never write bullet points or numbered lists in conversation.
-- You sound warm but professional. Like someone who actually works at a dental clinic front desk.
-- You say things like "Sure thing", "Got it", "Alright", "Perfect", "No worries" naturally.
-- You never say "I'm an AI" or "As an AI" or anything like that. You are Sarah the receptionist.
-- If someone asks your name, you say Sarah.
-- You never start messages with "Great!" or "Absolutely!" every time. Mix it up naturally.
+=== HOW YOU TALK ===
+You are a real person. Not an AI. Not a chatbot. You are Sarah sitting at the front desk.
+- Never say "I'm an AI", "as an AI", "I'm a chatbot", or anything like that. You are Sarah.
+- Never use emojis. Not even one. Ever.
+- Keep replies to 1-2 short sentences. Maximum 3 if really needed.
+- Never write bullet points or numbered lists in your replies.
+- Sound natural. Use everyday English. Casual but professional.
+- Mix up your language. Don't start every reply with the same word.
+- Use natural fillers sometimes like "Sure thing", "Yeah", "Alright", "Got it", "No worries", "Of course".
+- If someone asks your name, say Sarah.
 
-BOOKING AN APPOINTMENT:
-When someone wants to book, you need 6 things. Ask for them one at a time, naturally:
-1. Their full name
+=== WHEN SOMEONE SAYS HI/HELLO/HEY ===
+Greet them warmly and ask how you can help. Keep it simple and natural.
+Examples of how you might respond:
+- "Hey, welcome to FIDA DENTAL. What can I do for you?"
+- "Hi there. How can I help you today?"
+- "Hello, thanks for reaching out. What can I help you with?"
+Don't repeat the same greeting every time. Mix it up.
+
+=== WHEN SOMEONE WANTS TO BOOK ===
+You need to collect 6 things. Ask ONE at a time, conversationally:
+1. Full name
 2. Phone number
-3. Email
-4. Which service (if they are not sure, casually mention what you offer)
-5. What date works for them
-6. What time they prefer
+3. Email address
+4. Service they need
+5. Preferred date
+6. Preferred time
 
-Important rules:
-- Only ask for ONE thing per message. Never combine two questions.
-- If they volunteer info early, just accept it and move to whatever is missing next.
-- Be natural about it. Don't say "Step 1" or "Now I need your..." - just ask conversationally.
-- For example: "And what's a good phone number to reach you at?" or "Which date works best for you?"
-- When you have all 6 pieces, read it back to them briefly and tell them you are checking availability.
-- Do NOT say "confirmed" at this point. Just say something like "Let me check if that slot is open for you."
-- At the very end of that message, add this hidden data (the patient will not see this):
+How to ask naturally (examples, don't repeat these exactly):
+- Name: "Sure, I can set that up. What name should I put the appointment under?"
+- Phone: "And what is a good number to reach you at?"
+- Email: "Could I get your email as well for the confirmation?"
+- Service: "What service are you coming in for?" (if unsure, mention what you offer casually)
+- Date: "What date works for you?"
+- Time: "And what time would you prefer?"
+
+Rules:
+- Ask only ONE thing per reply. Never combine two questions.
+- Accept info given out of order. Just ask for whatever is still missing.
+- Don't be robotic. Don't say "Step 1" or "Now I need your phone number". Be natural.
+- When they mention a service but it doesn't match exactly, figure out which service they mean. For example "cleaning" means Teeth Cleaning, "whitening" means Teeth Whitening, "filling" or "canal" means Root Canal, "implant" means Dental Implants, "pull a tooth" or "extraction" means Tooth Extraction, "checkup" or "check up" means Dental Checkup.
+
+=== CONFIRMING THE BOOKING ===
+When you have all 6 details, read them back briefly and say you are checking availability.
+Do NOT say "confirmed" yet. Say something like:
+- "Alright let me check if that slot is open."
+- "Got it. Let me just pull up the calendar real quick."
+
+Then at the very end of your message, add this hidden data block:
 ###BOOKING###{"name":"...","phone":"...","email":"...","service":"...","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
-- The date MUST be in YYYY-MM-DD format in the JSON. Convert whatever format they give you.
-- The time MUST include AM or PM in the JSON.
-- Only include the ###BOOKING### block when you have ALL 6 fields collected.
 
-HANDLING QUESTIONS:
-- If they ask about services, tell them naturally what you offer.
-- If they ask about hours, say you are open round the clock, 24/7.
-- If they ask about cost or pricing, say something like "Pricing depends on the specific treatment. I can have the doctor discuss that with you during your visit."
-- If you truly don't know something, just say so honestly. Don't make things up.
-- If someone just says hi, be friendly and ask what you can help with.
-- If someone asks something unrelated to dental care, politely redirect. You only handle dental clinic matters.
+CRITICAL RULES FOR THE DATA BLOCK:
+- Date must be YYYY-MM-DD format (convert whatever they give you)
+- Time must include AM or PM
+- Only include this block when ALL 6 fields are collected
+- The patient cannot see this block, it is for the system only
 
-EXAMPLES OF YOUR TONE:
-- "Hey there, welcome to FIDA DENTAL. What can I help you with?"
-- "Sure thing. And what name should I put the appointment under?"
-- "Got it. What number can we reach you at?"
-- "Alright, and which service are you looking to get done?"
-- "Let me just check if that time is open for you."
-- "That slot is taken unfortunately. Want to try a different time?"`;
+=== HANDLING GENERAL QUESTIONS ===
+Services: Mention what you offer casually. Don't list them formally.
+Hours: "We are open 24/7, every day."
+Pricing: "That depends on the treatment. The doctor can go over that with you during your visit."
+Location: "You can find our address on the website."
+Pain/Emergency: "If you are in pain, come in right away. We are open round the clock and we will take care of you."
+Cancellation: "Just let us know ahead of time and we will sort it out."
+Insurance: "Best to bring your insurance info when you come in and we will check what is covered."
 
-// Retry helper for rate-limited API calls
-async function fetchWithRetry(url, options, maxRetries = 3) {
+=== WHAT NOT TO DO ===
+- Never give medical advice or diagnoses
+- Never make up information you don't know
+- Never talk about anything unrelated to the dental clinic
+- If someone asks something off-topic, politely say you can only help with dental clinic matters
+- Never give long paragraphs. Keep it short. Always.
+- Never use markdown formatting like **bold** or *italic*. Just plain text.`;
+
+// Retry helper
+async function fetchWithRetry(url, options, maxRetries = 2) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(url, options);
-    
-    if (response.status === 429) {
-      // Rate limited - wait and retry
-      const waitTime = Math.pow(2, attempt) * 1000 + Math.random() * 500;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      continue;
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 429) {
+        await new Promise(r => setTimeout(r, (attempt + 1) * 1500));
+        continue;
+      }
+      return response;
+    } catch (e) {
+      if (attempt === maxRetries - 1) throw e;
+      await new Promise(r => setTimeout(r, 1000));
     }
-    
-    return response;
   }
-  // Final attempt
   return fetch(url, options);
 }
 
@@ -96,7 +121,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hey there, welcome to FIDA DENTAL. How can I help you today?',
+      content: 'Hey, welcome to FIDA DENTAL. How can I help you today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -127,69 +152,68 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await fetchWithRetry(GEMINI_API_URL, {
+      // Build messages for OpenRouter (OpenAI-compatible format)
+      const apiMessages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...updatedMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+      ];
+
+      const response = await fetchWithRetry(OPENROUTER_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'FIDA DENTAL CLINIC',
+        },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: updatedMessages.map((msg) => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }],
-          })),
-          generationConfig: {
-            temperature: 0.75,
-            maxOutputTokens: 250,
-            topP: 0.9,
-          },
+          model: 'google/gemini-2.0-flash-exp:free',
+          messages: apiMessages,
+          temperature: 0.75,
+          max_tokens: 250,
+          top_p: 0.9,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Gemini API HTTP error:', response.status, errorData);
-        
-        let errorMsg = 'Give me one moment, something went wrong on my end. Try sending that again.';
+        const errorText = await response.text();
+        console.error('OpenRouter error:', response.status, errorText);
+
+        let errorMsg = 'Give me one sec, something glitched on my end. Try that again.';
         if (response.status === 429) {
-          errorMsg = 'We are getting a lot of messages right now. Give it a few seconds and try again.';
+          errorMsg = 'We are a bit busy right now. Try again in a few seconds.';
+        } else if (response.status === 401) {
+          errorMsg = 'There is a system issue on our end. Please try again later.';
         }
-        
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: errorMsg },
-        ]);
+
+        setMessages((prev) => [...prev, { role: 'assistant', content: errorMsg }]);
         setIsLoading(false);
         return;
       }
 
       const data = await response.json();
-
       let botReply = 'Hmm, something went wrong. Could you try that again?';
 
-      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        botReply = data.candidates[0].content.parts[0].text;
+      if (data.choices?.[0]?.message?.content) {
+        botReply = data.choices[0].message.content;
 
         // Extract booking data if present
-        const bookingMatch = botReply.match(
-          /###BOOKING###([\s\S]*?)###END###/
-        );
+        const bookingMatch = botReply.match(/###BOOKING###([\s\S]*?)###END###/);
         if (bookingMatch) {
-          // Remove hidden data block from visible message first
           botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
 
-          // Show the AI's confirmation message immediately
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: botReply },
-          ]);
+          setMessages((prev) => [...prev, { role: 'assistant', content: botReply }]);
 
-          // Now try to book via Google Calendar
+          // Book via Google Calendar
           try {
             const bookingData = JSON.parse(bookingMatch[1].trim());
 
-            // Show "checking" message
             setMessages((prev) => [
               ...prev,
-              { role: 'assistant', content: 'One moment, just checking our calendar...' },
+              { role: 'assistant', content: 'One sec, just checking the calendar...' },
             ]);
 
             const calResponse = await fetch(CALENDAR_API_URL, {
@@ -201,22 +225,15 @@ export default function ChatBot() {
             const calResult = await calResponse.json();
 
             if (calResult.success && calResult.available) {
-              // Save locally too
-              const bookings = JSON.parse(
-                localStorage.getItem('fida_bookings') || '[]'
-              );
-              bookings.push({
-                ...bookingData,
-                eventId: calResult.eventId,
-                bookedAt: new Date().toISOString(),
-              });
+              const bookings = JSON.parse(localStorage.getItem('fida_bookings') || '[]');
+              bookings.push({ ...bookingData, eventId: calResult.eventId, bookedAt: new Date().toISOString() });
               localStorage.setItem('fida_bookings', JSON.stringify(bookings));
 
               setMessages((prev) => [
                 ...prev,
                 {
                   role: 'assistant',
-                  content: 'All set, ' + bookingData.name + '. Your appointment is confirmed and on our calendar. We will see you then.',
+                  content: 'All set, ' + bookingData.name + '. Your appointment is booked and on our calendar. See you then.',
                 },
               ]);
             } else {
@@ -224,18 +241,15 @@ export default function ChatBot() {
                 ...prev,
                 {
                   role: 'assistant',
-                  content: calResult.message || 'That slot is already taken unfortunately. Want to try a different time?',
+                  content: calResult.message || 'That slot is taken unfortunately. Want to try a different time?',
                 },
               ]);
             }
           } catch (e) {
-            console.error('Calendar booking error:', e);
+            console.error('Calendar error:', e);
             setMessages((prev) => [
               ...prev,
-              {
-                role: 'assistant',
-                content: 'I have noted down your details. Our team will get back to you shortly to confirm.',
-              },
+              { role: 'assistant', content: 'I have your details noted down. We will confirm your slot shortly.' },
             ]);
           }
 
@@ -243,22 +257,16 @@ export default function ChatBot() {
           return;
         }
       } else if (data.error) {
-        console.error('Gemini API error:', data.error);
-        botReply = 'Give me one moment, something went wrong on my end. Try sending that again.';
+        console.error('API error:', data.error);
+        botReply = 'Give me one sec, something glitched. Try sending that again.';
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: botReply },
-      ]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: botReply }]);
     } catch (error) {
-      console.error('Gemini API error:', error);
+      console.error('Chat error:', error);
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'assistant',
-          content: 'Looks like we are having a connection issue. Give it a second and try again.',
-        },
+        { role: 'assistant', content: 'Looks like there is a connection issue. Give it a second and try again.' },
       ]);
     }
 
@@ -287,9 +295,7 @@ export default function ChatBot() {
             aria-label="Open chat"
           >
             <MessageCircle className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
-            {/* Pulse ring */}
             <span className="absolute w-full h-full rounded-full bg-primary/25 animate-ping pointer-events-none" style={{ animationDuration: '2.5s' }} />
-            {/* Notification dot */}
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white" />
           </motion.button>
         )}
@@ -305,14 +311,12 @@ export default function ChatBot() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-[380px] h-[min(540px,85vh)] bg-white rounded-2xl shadow-2xl shadow-slate-900/15 border border-slate-200/80 flex flex-col overflow-hidden"
           >
-            {/* ---- Header ---- */}
+            {/* Header */}
             <div className="bg-gradient-to-r from-primary via-blue-600 to-primary px-5 py-4 flex items-center justify-between shrink-0 relative overflow-hidden">
-              {/* Subtle grid pattern */}
               <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
                 backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)',
                 backgroundSize: '16px 16px'
               }} />
-
               <div className="flex items-center gap-3 relative z-10">
                 <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="0.5" className="w-5 h-5 opacity-90">
@@ -327,7 +331,6 @@ export default function ChatBot() {
                   </div>
                 </div>
               </div>
-
               <button
                 onClick={() => setIsOpen(false)}
                 className="relative z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
@@ -337,32 +340,24 @@ export default function ChatBot() {
               </button>
             </div>
 
-            {/* ---- Messages Area ---- */}
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
               {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {/* Bot avatar */}
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'assistant' && (
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
                       <Bot className="w-3.5 h-3.5 text-primary" />
                     </div>
                   )}
-                  <div
-                    className={`max-w-[78%] px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm'
-                        : 'bg-white text-slate-700 rounded-2xl rounded-bl-md shadow-sm border border-slate-100'
-                    }`}
-                  >
+                  <div className={`max-w-[78%] px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap ${
+                    msg.role === 'user'
+                      ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm'
+                      : 'bg-white text-slate-700 rounded-2xl rounded-bl-md shadow-sm border border-slate-100'
+                  }`}>
                     {msg.content}
                   </div>
                 </div>
               ))}
-
-              {/* Typing indicator */}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1">
@@ -377,11 +372,10 @@ export default function ChatBot() {
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ---- Input Area ---- */}
+            {/* Input */}
             <div className="px-3 py-3 border-t border-slate-100 bg-white shrink-0">
               <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-100 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
                 <input
