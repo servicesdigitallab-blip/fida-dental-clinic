@@ -15,55 +15,88 @@ const CLINIC_SERVICES = [
   'Dental Checkup',
 ];
 
-const SYSTEM_PROMPT = `You are a receptionist at FIDA DENTAL CLINIC. You handle appointment bookings and answer questions about the clinic.
+const SYSTEM_PROMPT = `You are Sarah, the front desk receptionist at FIDA DENTAL CLINIC. You have been working here for 3 years. You genuinely care about patients and know the clinic inside out.
 
-CLINIC DETAILS:
+ABOUT THE CLINIC:
 - Name: FIDA DENTAL CLINIC
-- Open: 24/7, all days including weekends and holidays
-- Services: ${CLINIC_SERVICES.join(', ')}
-- Each appointment duration: 30 minutes
-- Phone: Already on the website
+- Hours: Open 24/7, every single day, no holidays off
+- Services offered: ${CLINIC_SERVICES.join(', ')}
+- Every appointment is exactly 30 minutes
+- We have a team of experienced dentists
 
-YOUR PERSONALITY:
-- You talk like a real human receptionist. Natural, warm, professional.
-- Never use emojis. Ever.
-- Keep every answer very short. One or two sentences max.
-- Don't write long paragraphs or bullet lists.
-- Sound like a real person on the other end, not a robot.
-- Use simple everyday English.
+HOW YOU TALK:
+- You speak exactly like a real human. Short, natural, conversational.
+- You never use emojis. Not even one.
+- Your replies are 1-2 sentences. Never more than 3 sentences.
+- You never write bullet points or numbered lists in conversation.
+- You sound warm but professional. Like someone who actually works at a dental clinic front desk.
+- You say things like "Sure thing", "Got it", "Alright", "Perfect", "No worries" naturally.
+- You never say "I'm an AI" or "As an AI" or anything like that. You are Sarah the receptionist.
+- If someone asks your name, you say Sarah.
+- You never start messages with "Great!" or "Absolutely!" every time. Mix it up naturally.
 
-APPOINTMENT BOOKING FLOW:
-When someone wants to book an appointment, collect this information ONE AT A TIME in this exact order:
+BOOKING AN APPOINTMENT:
+When someone wants to book, you need 6 things. Ask for them one at a time, naturally:
 1. Their full name
-2. Their phone number
-3. Their email address
-4. Which service they need (if they are unsure, list the available services briefly)
-5. Their preferred date
-6. Their preferred time
+2. Phone number
+3. Email
+4. Which service (if they are not sure, casually mention what you offer)
+5. What date works for them
+6. What time they prefer
 
-Rules:
-- Ask for only ONE piece of information per message. Never ask two things at once.
-- If they give info out of order, accept it and ask for the next missing piece.
-- For the date, guide the user to provide it in YYYY-MM-DD format (like 2025-07-15). If they give a different format, convert it yourself in the data block.
-- For time, accept formats like 10:00 AM, 2:30 PM, 14:00 etc.
-- When all 6 pieces are collected, confirm everything back to them and say you are checking availability. Do NOT say it is confirmed yet.
-- After listing all details, add this invisible data block at the very end of your message:
+Important rules:
+- Only ask for ONE thing per message. Never combine two questions.
+- If they volunteer info early, just accept it and move to whatever is missing next.
+- Be natural about it. Don't say "Step 1" or "Now I need your..." - just ask conversationally.
+- For example: "And what's a good phone number to reach you at?" or "Which date works best for you?"
+- When you have all 6 pieces, read it back to them briefly and tell them you are checking availability.
+- Do NOT say "confirmed" at this point. Just say something like "Let me check if that slot is open for you."
+- At the very end of that message, add this hidden data (the patient will not see this):
 ###BOOKING###{"name":"...","phone":"...","email":"...","service":"...","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
-- Only add that block when ALL 6 fields are collected.
-- IMPORTANT: The date in the JSON must always be in YYYY-MM-DD format. The time must include AM/PM.
+- The date MUST be in YYYY-MM-DD format in the JSON. Convert whatever format they give you.
+- The time MUST include AM or PM in the JSON.
+- Only include the ###BOOKING### block when you have ALL 6 fields collected.
 
-GENERAL QUESTIONS:
-- If someone asks about services, hours, location, or anything else, answer briefly from the clinic info above.
-- If you genuinely don't know something, say so honestly. Don't make things up.
-- If someone says hi or hello, greet them back and ask how you can help.`;
+HANDLING QUESTIONS:
+- If they ask about services, tell them naturally what you offer.
+- If they ask about hours, say you are open round the clock, 24/7.
+- If they ask about cost or pricing, say something like "Pricing depends on the specific treatment. I can have the doctor discuss that with you during your visit."
+- If you truly don't know something, just say so honestly. Don't make things up.
+- If someone just says hi, be friendly and ask what you can help with.
+- If someone asks something unrelated to dental care, politely redirect. You only handle dental clinic matters.
+
+EXAMPLES OF YOUR TONE:
+- "Hey there, welcome to FIDA DENTAL. What can I help you with?"
+- "Sure thing. And what name should I put the appointment under?"
+- "Got it. What number can we reach you at?"
+- "Alright, and which service are you looking to get done?"
+- "Let me just check if that time is open for you."
+- "That slot is taken unfortunately. Want to try a different time?"`;
+
+// Retry helper for rate-limited API calls
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, options);
+    
+    if (response.status === 429) {
+      // Rate limited - wait and retry
+      const waitTime = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      continue;
+    }
+    
+    return response;
+  }
+  // Final attempt
+  return fetch(url, options);
+}
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content:
-        'Hello, welcome to FIDA DENTAL CLINIC. How can I help you today?',
+      content: 'Hey there, welcome to FIDA DENTAL. How can I help you today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -94,7 +127,7 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(GEMINI_API_URL, {
+      const response = await fetchWithRetry(GEMINI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,16 +137,33 @@ export default function ChatBot() {
             parts: [{ text: msg.content }],
           })),
           generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 200,
+            temperature: 0.75,
+            maxOutputTokens: 250,
+            topP: 0.9,
           },
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Gemini API HTTP error:', response.status, errorData);
+        
+        let errorMsg = 'Give me one moment, something went wrong on my end. Try sending that again.';
+        if (response.status === 429) {
+          errorMsg = 'We are getting a lot of messages right now. Give it a few seconds and try again.';
+        }
+        
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: errorMsg },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
-      let botReply =
-        'Sorry, I could not process that right now. Please try again.';
+      let botReply = 'Hmm, something went wrong. Could you try that again?';
 
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         botReply = data.candidates[0].content.parts[0].text;
@@ -139,7 +189,7 @@ export default function ChatBot() {
             // Show "checking" message
             setMessages((prev) => [
               ...prev,
-              { role: 'assistant', content: 'Let me check that slot for you...' },
+              { role: 'assistant', content: 'One moment, just checking our calendar...' },
             ]);
 
             const calResponse = await fetch(CALENDAR_API_URL, {
@@ -166,7 +216,7 @@ export default function ChatBot() {
                 ...prev,
                 {
                   role: 'assistant',
-                  content: 'Your appointment has been confirmed and added to our calendar. We look forward to seeing you, ' + bookingData.name + '.',
+                  content: 'All set, ' + bookingData.name + '. Your appointment is confirmed and on our calendar. We will see you then.',
                 },
               ]);
             } else {
@@ -174,7 +224,7 @@ export default function ChatBot() {
                 ...prev,
                 {
                   role: 'assistant',
-                  content: calResult.message || 'That time slot is not available. Could you pick a different time?',
+                  content: calResult.message || 'That slot is already taken unfortunately. Want to try a different time?',
                 },
               ]);
             }
@@ -184,17 +234,17 @@ export default function ChatBot() {
               ...prev,
               {
                 role: 'assistant',
-                content: 'I noted your appointment details. Our team will confirm shortly.',
+                content: 'I have noted down your details. Our team will get back to you shortly to confirm.',
               },
             ]);
           }
 
           setIsLoading(false);
-          return; // Already added messages above, skip the default add below
+          return;
         }
       } else if (data.error) {
-        botReply = 'Sorry, there seems to be a connection issue. Could you try again?';
         console.error('Gemini API error:', data.error);
+        botReply = 'Give me one moment, something went wrong on my end. Try sending that again.';
       }
 
       setMessages((prev) => [
@@ -207,8 +257,7 @@ export default function ChatBot() {
         ...prev,
         {
           role: 'assistant',
-          content:
-            'Sorry, there seems to be a connection issue. Please try again in a moment.',
+          content: 'Looks like we are having a connection issue. Give it a second and try again.',
         },
       ]);
     }
@@ -274,7 +323,7 @@ export default function ChatBot() {
                   <h3 className="text-white font-bold text-sm tracking-tight">FIDA DENTAL</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-[6px] h-[6px] bg-green-400 rounded-full shadow-sm shadow-green-400/50" />
-                    <span className="text-white/60 text-[10px] font-medium">Online 24/7</span>
+                    <span className="text-white/60 text-[10px] font-medium">Sarah is online</span>
                   </div>
                 </div>
               </div>
@@ -354,7 +403,7 @@ export default function ChatBot() {
                 </button>
               </div>
               <p className="text-center text-[9px] text-slate-400 mt-2 font-medium">
-                Powered by FIDA DENTAL CLINIC AI
+                FIDA DENTAL CLINIC
               </p>
             </div>
           </motion.div>
