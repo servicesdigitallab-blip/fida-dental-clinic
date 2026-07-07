@@ -44,10 +44,13 @@ When someone wants to book an appointment, collect this information ONE AT A TIM
 Rules:
 - Ask for only ONE piece of information per message. Never ask two things at once.
 - If they give info out of order, accept it and ask for the next missing piece.
-- When all 6 pieces are collected, confirm everything back to them in a clean format and tell them their appointment is confirmed.
-- After confirming, add this invisible data block at the very end of your message:
-###BOOKING###{"name":"...","phone":"...","email":"...","service":"...","date":"...","time":"..."}###END###
-- Only add that block when ALL 6 fields are collected and you are confirming.
+- For the date, guide the user to provide it in YYYY-MM-DD format (like 2025-07-15). If they give a different format, convert it yourself in the data block.
+- For time, accept formats like 10:00 AM, 2:30 PM, 14:00 etc.
+- When all 6 pieces are collected, confirm everything back to them and say you are checking availability. Do NOT say it is confirmed yet.
+- After listing all details, add this invisible data block at the very end of your message:
+###BOOKING###{"name":"...","phone":"...","email":"...","service":"...","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
+- Only add that block when ALL 6 fields are collected.
+- IMPORTANT: The date in the JSON must always be in YYYY-MM-DD format. The time must include AM/PM.
 
 GENERAL QUESTIONS:
 - If someone asks about services, hours, location, or anything else, answer briefly from the clinic info above.
@@ -83,7 +86,7 @@ export default function ChatBot() {
 
     const userMessage = input.trim();
     setInput('');
-    let updatedMessages = [
+    const updatedMessages = [
       ...messages,
       { role: 'user', content: userMessage },
     ];
@@ -91,98 +94,107 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      let retryCount = 0;
-      let success = false;
-      let botReply = '';
+      const response = await fetch(GEMINI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: updatedMessages.map((msg) => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }],
+          })),
+          generationConfig: {
+            temperature: 0.6,
+            maxOutputTokens: 200,
+          },
+        }),
+      });
 
-      while (!success && retryCount < 3) {
-        const response = await fetch(GEMINI_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: updatedMessages.map((msg) => ({
-              role: msg.role === 'assistant' ? 'model' : 'user',
-              parts: [{ text: msg.content }],
-            })),
-            generationConfig: {
-              temperature: 0.6,
-              maxOutputTokens: 200,
-            },
-          }),
-        });
+      const data = await response.json();
 
-        const data = await response.json();
+      let botReply =
+        'Sorry, I could not process that right now. Please try again.';
 
-        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          botReply = data.candidates[0].content.parts[0].text;
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        botReply = data.candidates[0].content.parts[0].text;
 
-          // Extract booking data if present
-          const bookingMatch = botReply.match(
-            /###BOOKING###([\s\S]*?)###END###/
-          );
-          if (bookingMatch) {
-            try {
-              const bookingData = JSON.parse(bookingMatch[1].trim());
+        // Extract booking data if present
+        const bookingMatch = botReply.match(
+          /###BOOKING###([\s\S]*?)###END###/
+        );
+        if (bookingMatch) {
+          // Remove hidden data block from visible message first
+          botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
 
-              // Call Google Apps Script to check availability and book
-              const calendarResponse = await fetch(CALENDAR_API_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                  action: 'book',
-                  ...bookingData,
-                }),
+          // Show the AI's confirmation message immediately
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: botReply },
+          ]);
+
+          // Now try to book via Google Calendar
+          try {
+            const bookingData = JSON.parse(bookingMatch[1].trim());
+
+            // Show "checking" message
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', content: 'Let me check that slot for you...' },
+            ]);
+
+            const calResponse = await fetch(CALENDAR_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ action: 'book', ...bookingData }),
+            });
+
+            const calResult = await calResponse.json();
+
+            if (calResult.success && calResult.available) {
+              // Save locally too
+              const bookings = JSON.parse(
+                localStorage.getItem('fida_bookings') || '[]'
+              );
+              bookings.push({
+                ...bookingData,
+                eventId: calResult.eventId,
+                bookedAt: new Date().toISOString(),
               });
+              localStorage.setItem('fida_bookings', JSON.stringify(bookings));
 
-              const calendarResult = await calendarResponse.json();
-
-              if (calendarResult.success) {
-                // Booking succeeded on Google Calendar
-                const bookings = JSON.parse(
-                  localStorage.getItem('fida_bookings') || '[]'
-                );
-                bookings.push({
-                  ...bookingData,
-                  eventId: calendarResult.eventId,
-                  bookedAt: new Date().toISOString(),
-                });
-                localStorage.setItem('fida_bookings', JSON.stringify(bookings));
-
-                // Remove hidden data block from visible message
-                botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
-                success = true;
-              } else {
-                // Booking failed because slot is taken
-                // Inject system correction and query Gemini again
-                updatedMessages = [
-                  ...updatedMessages,
-                  {
-                    role: 'assistant',
-                    content: botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim(),
-                  },
-                  {
-                    role: 'user',
-                    content: `System notification: The appointment time slot on ${bookingData.date} at ${bookingData.time} is already booked on Google Calendar. Please politely tell the user that this time slot is unavailable and ask them to select another date or time.`,
-                  },
-                ];
-                retryCount++;
-                continue;
-              }
-            } catch (e) {
-              console.error('Failed to parse or process booking:', e);
-              botReply = botReply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
-              success = true;
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: 'Your appointment has been confirmed and added to our calendar. We look forward to seeing you, ' + bookingData.name + '.',
+                },
+              ]);
+            } else {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: calResult.message || 'That time slot is not available. Could you pick a different time?',
+                },
+              ]);
             }
-          } else {
-            success = true;
+          } catch (e) {
+            console.error('Calendar booking error:', e);
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: 'I noted your appointment details. Our team will confirm shortly.',
+              },
+            ]);
           }
-        } else {
-          botReply = 'Sorry, I could not process that right now. Please try again.';
-          if (data.error) {
-            console.error('Gemini API error:', data.error);
-          }
-          success = true;
+
+          setIsLoading(false);
+          return; // Already added messages above, skip the default add below
         }
+      } else if (data.error) {
+        botReply = 'Sorry, there seems to be a connection issue. Could you try again?';
+        console.error('Gemini API error:', data.error);
       }
 
       setMessages((prev) => [
