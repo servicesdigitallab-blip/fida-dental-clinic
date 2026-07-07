@@ -8,6 +8,7 @@ import Reviews from './components/Reviews';
 import Team from './components/Team';
 import Pricing from './components/Pricing';
 import WarningPopup from './components/WarningPopup';
+import ChatBot from './components/ChatBot';
 
 function App() {
   return (
@@ -22,10 +23,12 @@ function App() {
         <Team />
         <Pricing />
       </Layout>
+      <ChatBot />
     </>
   );
 }
 
 export default App;
+
 
 
