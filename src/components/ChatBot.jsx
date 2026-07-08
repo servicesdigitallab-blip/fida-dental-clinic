@@ -48,6 +48,7 @@ Collect the following information ONE BY ONE (ik ik kr ka) with high respect and
 6. Date & Time:
    - "Alright. What day and time works best for you? We are open 24/7."
    - If they say "tomorrow at 2pm", accept it naturally and say you're checking the slot.
+   - If they want to book today but today is fully booked, politely suggest tomorrow: "Today is actually fully booked, unfortunately. Which time works best for you tomorrow instead?"
 
 Rules for Booking:
 - Ask exactly ONE question at a time. Do NOT combine multiple details or questions.
@@ -263,7 +264,7 @@ export default function ChatBot() {
             localStorage.setItem('fida_bookings', JSON.stringify(all));
             setMessages(p => [...p, { role: 'assistant', content: `All set ${data.name}, your appointment is booked. See you then.` }]);
           } else {
-            setMessages(p => [...p, { role: 'assistant', content: cd.message || "That slot's taken. Wanna try a different time?" }]);
+            setMessages(p => [...p, { role: 'assistant', content: "That slot is actually taken, unfortunately. Which time works best for you tomorrow instead?" }]);
           }
         } catch (e) {
           setMessages(p => [...p, { role: 'assistant', content: "Got your info. Our team will confirm shortly." }]);
