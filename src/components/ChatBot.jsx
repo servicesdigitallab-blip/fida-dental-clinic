@@ -52,12 +52,16 @@ Collect the following information ONE BY ONE (ik ik kr ka) with high respect and
 Rules for Booking:
 - Ask exactly ONE question at a time. Do NOT combine multiple details or questions.
 - If they give info out of order, accept it and move to the next missing piece.
-- When all 6 pieces are collected, say you are checking the calendar. Add this hidden data block at the end:
+- Once all 6 pieces are collected, summarize them nicely and ask the user for confirmation:
+  "I have you down for [Service] on [Date] at [Time]. Shall I go ahead and book this for you, [Name]?"
+- Do NOT output the ###BOOKING### block during the summary.
+- ONLY output the ###BOOKING### block when the user replies to the summary with confirmation (e.g. "yes", "please", "go ahead", "confirm").
+- The block format must be:
 ###BOOKING###{"name":"","phone":"","email":"","service":"","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
-- Do NOT add the block until you have all 6 items. Date must be YYYY-MM-DD. Time must have AM/PM.`;
+- Date must be YYYY-MM-DD. Time must have AM/PM.`;
 };
 
-const MAX_HISTORY = 8; // Keep history short for fast processing
+const MAX_HISTORY = 25; // Increase history size so Sarah never forgets name or details
 
 // Memory Storage
 const MEM_KEY = 'fida_chat_memory_v2';
