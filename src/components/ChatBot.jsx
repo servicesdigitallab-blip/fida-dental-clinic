@@ -280,7 +280,7 @@ export default function ChatBot() {
               const next = [...p];
               next[next.length - 1] = { 
                 role: 'assistant', 
-                content: `Perfect, ${data.name}! Your appointment has been booked successfully in the calendar (${cd.calendarName || 'your account calendar'}) for ${data.date} at ${data.time}. We look forward to seeing you!` 
+                content: `Perfect, ${data.name}! Your appointment has been booked successfully for ${data.date} at ${data.time}. We look forward to seeing you!` 
               };
               return next;
             });
