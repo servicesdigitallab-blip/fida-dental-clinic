@@ -170,7 +170,7 @@ export default function ChatBot() {
           'X-Title': 'FIDA DENTAL CLINIC',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.0-flash-exp:free',
+          model: 'openrouter/free',
           messages: apiMessages,
           temperature: 0.75,
           max_tokens: 250,
