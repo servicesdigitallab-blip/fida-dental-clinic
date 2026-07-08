@@ -104,6 +104,37 @@ export default function ChatBot() {
     setLoading(true);
 
     let replyText = '';
+    let dbNotice = '';
+
+    // Run background history lookup if user provides a name
+    const lastUserMsg = txt.trim();
+    let extractedName = '';
+    const nameMatch = lastUserMsg.match(/(?:name is|i am|im|this is|call me)\s+([A-Za-z\s]{2,20})/i);
+    if (nameMatch) {
+      extractedName = nameMatch[1].trim();
+    } else if (lastUserMsg.split(' ').length <= 2 && !lastUserMsg.includes('@') && !['yes', 'no', 'hey', 'hi', 'hello', 'appointment', 'book'].includes(lastUserMsg.toLowerCase())) {
+      extractedName = lastUserMsg;
+    }
+
+    if (extractedName && extractedName.length > 2) {
+      try {
+        const checkRes = await fetch(CAL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'history', name: extractedName })
+        });
+        const checkData = await checkRes.json();
+        if (checkData.success) {
+          if (checkData.exists) {
+            dbNotice = `SYSTEM NOTICE: Google Calendar database lookup confirms patient "${extractedName}" HAS booked before. Treat them as a returning patient, welcome them back warmly, and do not ask for their email again. Just get their phone and slot.`;
+          } else {
+            dbNotice = `SYSTEM NOTICE: Google Calendar database lookup confirms patient "${extractedName}" has NO history. Welcome them as a new patient, ask if it is their first time, and gather phone, email, service, date, time.`;
+          }
+        }
+      } catch (e) {
+        console.log("History lookup error:", e);
+      }
+    }
     
     // Add placeholder assistant message for streaming
     setMessages(p => [...p, { role: 'assistant', content: '' }]);
@@ -112,6 +143,7 @@ export default function ChatBot() {
       const history = updated.slice(-MAX_HISTORY);
       const apiMessages = [
         { role: 'system', content: SP },
+        ...(dbNotice ? [{ role: 'system', content: dbNotice }] : []),
         ...history.map(m => ({ role: m.role, content: m.content }))
       ];
 
