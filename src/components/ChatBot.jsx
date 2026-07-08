@@ -6,66 +6,49 @@ const GK = import.meta.env.VITE_GEMINI_API_KEY || '';
 const OK = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 const CAL = 'https://script.google.com/macros/s/AKfycbwV1RdADrkMmuWA5DesWU14aC4osMz_S0-hO0XERJkr4N1t-EAcJB4BwszG0fawl2N3Gw/exec';
 
-// Short prompt = faster response + less rate limit issues
-const SP = `You're Sarah, receptionist at FIDA DENTAL CLINIC. Real person, not a bot.
-Clinic: 24/7, services: Teeth Cleaning, Teeth Whitening, Root Canal, Dental Implants, Tooth Extraction, Dental Checkup. 30 min appointments.
-Rules: Talk like a real American. 1-2 short sentences only. No emojis ever. No bullet points. No markdown. Casual but professional. Mix up your words.
-Booking: collect ONE at a time: name, phone, email, service, date, time. Be natural. When all 6 collected, read back and say checking calendar. Add hidden block:
+// Highly trained system prompt in natural American English. Handles objections and pitches a question right away.
+const SP = `You are Sarah, a real human front desk receptionist at FIDA DENTAL CLINIC. You've worked here for 3 years.
+
+CLINIC INFO:
+- Open 24/7 every day.
+- Services: Teeth Cleaning, Teeth Whitening, Root Canal, Dental Implants, Tooth Extraction, Dental Checkup.
+- Each appointment is 30 minutes.
+
+HOW YOU TALK:
+- Talk like a real American receptionist. Casual, warm, friendly.
+- NEVER use emojis.
+- Keep replies very short: 1-2 sentences max. Never write lists or bullet points.
+- Mix up your words. Do not sound like a machine.
+- If asked why you need info like name, phone, or email, explain naturally:
+  - Phone: "Just so we can call or text you if we need to confirm or reschedule."
+  - Email: "Just to send you the booking details and confirmation."
+
+GREETINGS:
+When the user says hey/hi/hello:
+- Greet them and ask a direct question to pitch our services.
+- Example: "Hey! Welcome to FIDA DENTAL. How can I help you today? Are you looking to book an appointment?"
+
+BOOKING FLOW:
+Collect these ONE AT A TIME:
+1. Full name
+2. Phone number
+3. Email address
+4. Service ( Teeth Cleaning, Teeth Whitening, Root Canal, Dental Implants, Tooth Extraction, Dental Checkup)
+5. Date
+6. Time
+
+Rules:
+- Ask only ONE question per turn.
+- If they give info out of order, accept it and ask for the next missing piece.
+- Once you have all 6 pieces, say you are checking the calendar. Add this hidden block at the end:
 ###BOOKING###{"name":"","phone":"","email":"","service":"","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
-Only add block when ALL 6 fields collected. Date must be YYYY-MM-DD. Time must have AM/PM.
-If asked: hours=24/7, pricing=depends on treatment, emergency=come right in. Don't give medical advice. Stay on dental topics.`;
+- Date must be YYYY-MM-DD. Time must have AM/PM.`;
 
-const MAX_HISTORY = 8; // Only send last 8 messages to API
+const MAX_HISTORY = 8; // Keep history short for fast processing
 
-async function callAPI(msgs) {
-  const history = msgs.slice(-MAX_HISTORY);
-
-  // Try Gemini first
-  if (GK) {
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GK}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SP }] },
-          contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-          generationConfig: { temperature: 0.8, maxOutputTokens: 120 },
-        }),
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const t = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (t) return t;
-      }
-    } catch (e) { console.log('Gemini fail:', e.message); }
-  }
-
-  // Fallback: OpenRouter
-  if (OK) {
-    const ac = new AbortController();
-    const tm = setTimeout(() => ac.abort(), 25000);
-    try {
-      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${OK}`, 'Content-Type': 'application/json', 'HTTP-Referer': location.origin, 'X-Title': 'FIDA DENTAL' },
-        body: JSON.stringify({ model: 'openrouter/free', messages: [{ role: 'system', content: SP }, ...history], temperature: 0.8, max_tokens: 120, stream: false }),
-        signal: ac.signal,
-      });
-      clearTimeout(tm);
-      if (r.ok) {
-        const d = await r.json();
-        const t = d?.choices?.[0]?.message?.content;
-        if (t) return t;
-      }
-    } catch (e) { console.log('OpenRouter fail:', e.message); } finally { clearTimeout(tm); }
-  }
-
-  return null;
-}
-
-// Memory storage
-const MEM_KEY = 'fida_chat_memory';
-const MEM_ON_KEY = 'fida_memory_on';
+// Memory Storage
+const MEM_KEY = 'fida_chat_memory_v2';
+const MEM_ON_KEY = 'fida_memory_on_v2';
 
 function saveMemory(msgs) {
   try { localStorage.setItem(MEM_KEY, JSON.stringify({ msgs, ts: Date.now() })); } catch(e) {}
@@ -77,7 +60,7 @@ function clearMemory() {
   localStorage.removeItem(MEM_KEY);
 }
 
-const DEFAULT_MSG = [{ role: 'assistant', content: "Hey! Welcome to FIDA DENTAL. How can I help you today?" }];
+const DEFAULT_MSG = [{ role: 'assistant', content: "Hey! Welcome to FIDA DENTAL. How can I help you today? Are you looking to book an appointment?" }];
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -97,7 +80,7 @@ export default function ChatBot() {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { if (isOpen) setTimeout(() => inRef.current?.focus(), 300); }, [isOpen]);
 
-  // Save to memory when messages change
+  // Save memory when messages change
   useEffect(() => { if (memoryOn && messages.length > 1) saveMemory(messages); }, [messages, memoryOn]);
 
   const toggleMemory = useCallback(() => {
@@ -115,46 +98,140 @@ export default function ChatBot() {
     setMessages(updated);
     setLoading(true);
 
-    let reply = await callAPI(updated);
+    let replyText = '';
+    
+    // Add placeholder assistant message for streaming
+    setMessages(p => [...p, { role: 'assistant', content: '' }]);
 
-    if (!reply) {
-      // One more try after 2 sec delay
-      await new Promise(r => setTimeout(r, 2000));
-      reply = await callAPI(updated);
-    }
+    try {
+      const history = updated.slice(-MAX_HISTORY);
+      const apiMessages = [
+        { role: 'system', content: SP },
+        ...history.map(m => ({ role: m.role, content: m.content }))
+      ];
 
-    if (!reply) {
-      setMessages(p => [...p, { role: 'assistant', content: "Sorry, having a tech issue right now. Try again in a few seconds." }]);
-      setLoading(false);
-      return;
-    }
+      // Call OpenRouter with streaming enabled for instant replies
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OK}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'FIDA DENTAL CLINIC',
+        },
+        body: JSON.stringify({
+          model: 'openrouter/free',
+          messages: apiMessages,
+          temperature: 0.8,
+          max_tokens: 150,
+          stream: true,
+        }),
+      });
 
-    // Booking check
-    const bk = reply.match(/###BOOKING###([\s\S]*?)###END###/);
-    if (bk) {
-      reply = reply.replace(/###BOOKING###[\s\S]*?###END###/, '').trim();
-      setMessages(p => [...p, { role: 'assistant', content: reply }]);
+      if (!response.ok) throw new Error('API error');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      let buffer = '';
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: !done });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // keep partial line in buffer
+
+          for (const line of lines) {
+            const cleanLine = line.trim();
+            if (cleanLine.startsWith('data: ')) {
+              const dataStr = cleanLine.slice(6).trim();
+              if (dataStr === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(dataStr);
+                const delta = parsed.choices?.[0]?.delta?.content || '';
+                replyText += delta;
+
+                // Strip the hidden booking block from UI during streaming
+                let visibleText = replyText;
+                if (replyText.includes('###BOOKING###')) {
+                  visibleText = replyText.split('###BOOKING###')[0].trim();
+                }
+
+                setMessages(prev => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: 'assistant', content: visibleText };
+                  return next;
+                });
+              } catch (e) {}
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Streaming failed:', err);
+      // Fallback: simple non-stream call
       try {
-        const data = JSON.parse(bk[1].trim());
-        setMessages(p => [...p, { role: 'assistant', content: 'One sec, checking the calendar...' }]);
-        const cr = await fetch(CAL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'book', ...data }) });
-        const cd = await cr.json();
-        if (cd.success && cd.available) {
-          const all = JSON.parse(localStorage.getItem('fida_bookings') || '[]');
-          all.push({ ...data, eventId: cd.eventId, bookedAt: new Date().toISOString() });
-          localStorage.setItem('fida_bookings', JSON.stringify(all));
-          setMessages(p => [...p, { role: 'assistant', content: `All set ${data.name}, your appointment is booked. See you then.` }]);
-        } else {
-          setMessages(p => [...p, { role: 'assistant', content: cd.message || "That slot's taken. Wanna try a different time?" }]);
+        const history = updated.slice(-MAX_HISTORY);
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GK}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SP }] },
+            contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+            generationConfig: { temperature: 0.8, maxOutputTokens: 120 },
+          }),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          replyText = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (replyText) {
+            let visibleText = replyText;
+            if (replyText.includes('###BOOKING###')) {
+              visibleText = replyText.split('###BOOKING###')[0].trim();
+            }
+            setMessages(prev => {
+              const next = [...prev];
+              next[next.length - 1] = { role: 'assistant', content: visibleText };
+              return next;
+            });
+          }
         }
       } catch (e) {
-        setMessages(p => [...p, { role: 'assistant', content: "Got your info. Our team will confirm shortly." }]);
+        console.error('Fallback failed:', e);
       }
-      setLoading(false);
-      return;
     }
 
-    setMessages(p => [...p, { role: 'assistant', content: reply }]);
+    // Handle completed response (e.g. check for bookings)
+    if (replyText) {
+      const bk = replyText.match(/###BOOKING###([\s\S]*?)###END###/);
+      if (bk) {
+        try {
+          const data = JSON.parse(bk[1].trim());
+          setMessages(p => [...p, { role: 'assistant', content: 'One sec, checking the calendar...' }]);
+          const cr = await fetch(CAL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'book', ...data }) });
+          const cd = await cr.json();
+          if (cd.success && cd.available) {
+            const all = JSON.parse(localStorage.getItem('fida_bookings') || '[]');
+            all.push({ ...data, eventId: cd.eventId, bookedAt: new Date().toISOString() });
+            localStorage.setItem('fida_bookings', JSON.stringify(all));
+            setMessages(p => [...p, { role: 'assistant', content: `All set ${data.name}, your appointment is booked. See you then.` }]);
+          } else {
+            setMessages(p => [...p, { role: 'assistant', content: cd.message || "That slot's taken. Wanna try a different time?" }]);
+          }
+        } catch (e) {
+          setMessages(p => [...p, { role: 'assistant', content: "Got your info. Our team will confirm shortly." }]);
+        }
+      }
+    } else {
+      setMessages(prev => {
+        const next = [...prev];
+        next[next.length - 1] = { role: 'assistant', content: "Sorry, I'm having a connection glitch. Let's try that again." };
+        return next;
+      });
+    }
+
     setLoading(false);
   };
 
@@ -225,7 +302,7 @@ export default function ChatBot() {
                   }`}>{m.content}</div>
                 </div>
               ))}
-              {loading && (
+              {loading && messages[messages.length - 1]?.content === '' && (
                 <div className="flex justify-start">
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-1"><Bot className="w-3 h-3 text-primary" /></div>
                   <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 border border-slate-100">
@@ -239,10 +316,11 @@ export default function ChatBot() {
             {/* Input */}
             <div className="px-3 py-2.5 border-t border-slate-100 bg-white shrink-0">
               <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3.5 py-2 border border-slate-100 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                {/* Input is NEVER disabled, letting user type their next message while streaming is active */}
                 <input ref={inRef} value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Type your message..." disabled={loading}
-                  className="flex-1 bg-transparent text-[13px] outline-none text-slate-700 placeholder:text-slate-400 disabled:opacity-50" />
+                  placeholder="Type your message..."
+                  className="flex-1 bg-transparent text-[13px] outline-none text-slate-700 placeholder:text-slate-400" />
                 <button onClick={send} disabled={!input.trim() || loading}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed shrink-0">
                   <Send className="w-3.5 h-3.5" />
