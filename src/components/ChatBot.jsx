@@ -41,6 +41,7 @@ YOUR TONE & PERSONALITY:
 STATE 1: CASUAL CONVERSATION & Q&A
 - If user says hi/hello/hey, greet them warmly and ask how you can help. Do NOT ask for booking details yet.
   - Example: "Hey! Welcome to FIDA DENTAL. What can I do for you today?"
+- If the user says goodbye, bye, or Allah Hafiz, respond politely and warmly: "Goodbye! It was my absolute pleasure chatting with you today. Take care, stay safe, and have a wonderful day! Allah Hafiz!"
 - If the user says thanks or thank you:
   - Respond with extreme sweetness and ask: "You are so welcome! It was my absolute pleasure. By the way, were you referred to us by someone?"
 - If the user replies YES to the referral question:
@@ -69,11 +70,13 @@ Collect the following information ONE BY ONE (ik ik kr ka) with high respect and
 Rules for Booking:
 - Ask exactly ONE question at a time. Do NOT combine multiple details or questions.
 - If they give info out of order, accept it and move to the next missing piece.
-- Once all 6 pieces are collected, summarize them nicely and ask the user for confirmation:
-  "I have you down for [Service] on [Date] at [Time]. Shall I go ahead and book this for you, [Name]?"
-- Do NOT output the ###BOOKING### block during the summary.
-- ONLY output the ###BOOKING### block when the user replies to the summary with confirmation (e.g. "yes", "please", "go ahead", "confirm").
-- The block format must be:
+- Once all 6 pieces of information are collected, you MUST immediately output a CHECK block to verify calendar availability.
+  - Say: "Let me check the calendar availability for you, one moment please..." or "I'm checking the slot availability for you right now..."
+  - The check block format must be:
+  ###CHECK###{"name":"[Name]","phone":"[Phone]","email":"[Email]","service":"[Service]","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
+  - Do NOT output the summary or ask for confirmation yet. Let the system verify the slot first.
+- ONLY output the ###BOOKING### block when the user replies to the summary with confirmation (e.g. "yes", "please", "go ahead", "confirm") AFTER you have told them the slot is available.
+- The booking block format must be:
 ###BOOKING###{"name":"","phone":"","email":"","service":"","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
 - Date must be YYYY-MM-DD. Time must have AM/PM.`;
 };
@@ -230,10 +233,12 @@ export default function ChatBot() {
                 const delta = parsed.choices?.[0]?.delta?.content || '';
                 replyText += delta;
 
-                // Strip the hidden booking block from UI during streaming
+                // Strip the hidden booking/check block from UI during streaming
                 let visibleText = replyText;
                 if (replyText.includes('###BOOKING###')) {
                   visibleText = replyText.split('###BOOKING###')[0].trim();
+                } else if (replyText.includes('###CHECK###')) {
+                  visibleText = replyText.split('###CHECK###')[0].trim();
                 }
 
                 setMessages(prev => {
@@ -267,6 +272,8 @@ export default function ChatBot() {
             let visibleText = replyText;
             if (replyText.includes('###BOOKING###')) {
               visibleText = replyText.split('###BOOKING###')[0].trim();
+            } else if (replyText.includes('###CHECK###')) {
+              visibleText = replyText.split('###CHECK###')[0].trim();
             }
             setMessages(prev => {
               const next = [...prev];
@@ -282,6 +289,70 @@ export default function ChatBot() {
 
     // Handle completed response (e.g. check for bookings)
     if (replyText) {
+      const chk = replyText.match(/###CHECK###([\s\S]*?)(?:###END###|$)/);
+      if (chk) {
+        try {
+          let jsonStr = chk[1].trim();
+          const lastBrace = jsonStr.lastIndexOf('}');
+          if (lastBrace !== -1) {
+            jsonStr = jsonStr.substring(0, lastBrace + 1);
+          }
+          const data = JSON.parse(jsonStr);
+
+          // 1. Show the "checking..." loading state
+          setMessages(p => {
+            const next = [...p];
+            next[next.length - 1] = {
+              role: 'assistant',
+              content: `Let me check the calendar availability for you, one moment please...`
+            };
+            return next;
+          });
+
+          // 2. Set loading state so user sees typing indicator
+          setLoading(true);
+
+          // 3. Make API call and wait for at least 3.5 seconds total for natural feel
+          const startTime = Date.now();
+          const cr = await fetch(CAL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'check', date: data.date, time: data.time })
+          });
+          const cd = await cr.json();
+
+          const elapsed = Date.now() - startTime;
+          const remainingDelay = Math.max(3500 - elapsed, 0); // ensure 3.5 to 6s delay
+          await new Promise(resolve => setTimeout(resolve, remainingDelay));
+
+          if (cd.success && cd.available) {
+            // Slot is available! Ask for confirmation.
+            setMessages(p => {
+              const next = [...p];
+              next[next.length - 1] = {
+                role: 'assistant',
+                content: `Great news, ${data.name}! That slot is available. I have you down for ${data.service} on ${data.date} at ${data.time}. Shall I go ahead and book this for you?`
+              };
+              return next;
+            });
+          } else {
+            // Slot is NOT available!
+            setMessages(p => {
+              const next = [...p];
+              next[next.length - 1] = {
+                role: 'assistant',
+                content: `I'm sorry, but that slot is already taken. Could you kindly suggest another day or time that works best for you?`
+              };
+              return next;
+            });
+          }
+        } catch (e) {
+          console.error("Checking slot error:", e);
+        }
+        setLoading(false);
+        return;
+      }
+
       const bk = replyText.match(/###BOOKING###([\s\S]*?)(?:###END###|$)/);
       if (bk) {
         try {
