@@ -48,7 +48,6 @@ Collect the following information ONE BY ONE (ik ik kr ka) with high respect and
 6. Date & Time:
    - "Alright. What day and time works best for you? We are open 24/7."
    - If they say "tomorrow at 2pm", accept it naturally and say you're checking the slot.
-   - If they want to book today but today is fully booked, politely suggest tomorrow: "Today is actually fully booked, unfortunately. Which time works best for you tomorrow instead?"
 
 Rules for Booking:
 - Ask exactly ONE question at a time. Do NOT combine multiple details or questions.
@@ -112,10 +111,13 @@ export default function ChatBot() {
     setMessages(updated);
     setLoading(true);
 
+    // 1. Show typing indicator immediately (0ms delay)
+    setMessages(p => [...p, { role: 'assistant', content: '' }]);
+
     let replyText = '';
     let dbNotice = '';
 
-    // Run background history lookup if user provides a name
+    // 2. Run background history lookup asynchronously
     const lastUserMsg = txt.trim();
     let extractedName = '';
     const nameMatch = lastUserMsg.match(/(?:name is|i am|im|this is|call me)\s+([A-Za-z\s]{2,20})/i);
@@ -144,9 +146,6 @@ export default function ChatBot() {
         console.log("History lookup error:", e);
       }
     }
-    
-    // Add placeholder assistant message for streaming
-    setMessages(p => [...p, { role: 'assistant', content: '' }]);
 
     try {
       const history = updated.slice(-MAX_HISTORY);
@@ -255,19 +254,46 @@ export default function ChatBot() {
       if (bk) {
         try {
           const data = JSON.parse(bk[1].trim());
-          setMessages(p => [...p, { role: 'assistant', content: 'One sec, checking the calendar...' }]);
+
+          // Hit Calendar API silently (no "One sec, checking..." message)
           const cr = await fetch(CAL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'book', ...data }) });
           const cd = await cr.json();
+
           if (cd.success && cd.available) {
             const all = JSON.parse(localStorage.getItem('fida_bookings') || '[]');
             all.push({ ...data, eventId: cd.eventId, bookedAt: new Date().toISOString() });
             localStorage.setItem('fida_bookings', JSON.stringify(all));
-            setMessages(p => [...p, { role: 'assistant', content: `All set ${data.name}, your appointment is booked. See you then.` }]);
+
+            // Replace the last streamed message with the polite confirmation
+            setMessages(p => {
+              const next = [...p];
+              next[next.length - 1] = { 
+                role: 'assistant', 
+                content: `Perfect, ${data.name}! Your appointment has been booked successfully for ${data.date} at ${data.time}. We look forward to seeing you!` 
+              };
+              return next;
+            });
           } else {
-            setMessages(p => [...p, { role: 'assistant', content: "That slot is actually taken, unfortunately. Which time works best for you tomorrow instead?" }]);
+            // Replace with polite slot-taken message and guide user to suggest a new time
+            setMessages(p => {
+              const next = [...p];
+              next[next.length - 1] = { 
+                role: 'assistant', 
+                content: `I'm sorry, but that time slot is already booked. Could you kindly suggest another day or time that works best for you?` 
+              };
+              return next;
+            });
           }
         } catch (e) {
-          setMessages(p => [...p, { role: 'assistant', content: "Got your info. Our team will confirm shortly." }]);
+          // Backup/Fallback message
+          setMessages(p => {
+            const next = [...p];
+            next[next.length - 1] = { 
+              role: 'assistant', 
+              content: `I have noted down your appointment details. Our team will verify and reach out to you shortly to confirm the slot.` 
+            };
+            return next;
+          });
         }
       }
     } else {
