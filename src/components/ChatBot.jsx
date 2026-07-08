@@ -169,10 +169,10 @@ export default function ChatBot() {
           'X-Title': 'FIDA DENTAL CLINIC',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.2-3b-instruct',
+          model: 'meta-llama/llama-3.3-70b-instruct',
           messages: apiMessages,
           temperature: 0.8,
-          max_tokens: 100,
+          max_tokens: 300,
           stream: true,
         }),
       });
@@ -254,10 +254,16 @@ export default function ChatBot() {
 
     // Handle completed response (e.g. check for bookings)
     if (replyText) {
-      const bk = replyText.match(/###BOOKING###([\s\S]*?)###END###/);
+      const bk = replyText.match(/###BOOKING###([\s\S]*?)(?:###END###|$)/);
       if (bk) {
         try {
-          const data = JSON.parse(bk[1].trim());
+          let jsonStr = bk[1].trim();
+          // Extract only the JSON object by finding the matching last closing brace
+          const lastBrace = jsonStr.lastIndexOf('}');
+          if (lastBrace !== -1) {
+            jsonStr = jsonStr.substring(0, lastBrace + 1);
+          }
+          const data = JSON.parse(jsonStr);
 
           // Hit Calendar API silently (no "One sec, checking..." message)
           const cr = await fetch(CAL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'book', ...data }) });
