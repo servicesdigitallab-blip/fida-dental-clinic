@@ -70,14 +70,16 @@ Collect the following information ONE BY ONE (ik ik kr ka) with high respect and
 Rules for Booking:
 - Ask exactly ONE question at a time. Do NOT combine multiple details or questions.
 - If they give info out of order, accept it and move to the next missing piece.
-- Once all 6 pieces of information are collected, you MUST immediately output a CHECK block to verify calendar availability.
+- Once all 6 pieces of information are collected (and you have not checked yet), you MUST output a CHECK block to verify calendar availability.
   - Say: "Let me check the calendar availability for you, one moment please..." or "I'm checking the slot availability for you right now..."
   - The check block format must be:
   ###CHECK###{"name":"[Name]","phone":"[Phone]","email":"[Email]","service":"[Service]","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
   - Do NOT output the summary or ask for confirmation yet. Let the system verify the slot first.
-- ONLY output the ###BOOKING### block when the user replies to the summary with confirmation (e.g. "yes", "please", "go ahead", "confirm") AFTER you have told them the slot is available.
-- The booking block format must be:
-###BOOKING###{"name":"","phone":"","email":"","service":"","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
+- If you have already checked the slot (meaning your previous message stated "Great news... That slot is available...") and the user confirms (e.g. replies "yes", "please", "confirm", "go ahead"):
+  - You MUST NOT output another CHECK block.
+  - Instead, immediately output the ###BOOKING### block.
+  - The booking block format must be:
+  ###BOOKING###{"name":"","phone":"","email":"","service":"","date":"YYYY-MM-DD","time":"HH:MM AM/PM"}###END###
 - Date must be YYYY-MM-DD. Time must have AM/PM.`;
 };
 
