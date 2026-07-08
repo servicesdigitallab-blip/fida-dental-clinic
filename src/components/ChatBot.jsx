@@ -169,10 +169,10 @@ export default function ChatBot() {
           'X-Title': 'FIDA DENTAL CLINIC',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-70b-instruct',
+          model: 'meta-llama/llama-3.2-3b-instruct',
           messages: apiMessages,
           temperature: 0.8,
-          max_tokens: 150,
+          max_tokens: 100,
           stream: true,
         }),
       });
