@@ -158,7 +158,7 @@ export default function WhyChooseUs() {
           
           {/* Left Column: 3D Dentist Character */}
           <motion.div 
-            className="lg:col-span-4 relative flex justify-center items-center h-[350px] lg:h-[450px]"
+            className="lg:col-span-5 relative flex justify-center items-center h-[350px] lg:h-[450px]"
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -178,8 +178,8 @@ export default function WhyChooseUs() {
             />
           </motion.div>
 
-          {/* Middle Column: Feature Cards */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
+          {/* Right Column: Feature Cards */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
             {features.map((feat, idx) => (
               <motion.div
                 key={feat.title}
@@ -200,215 +200,7 @@ export default function WhyChooseUs() {
             ))}
           </div>
 
-          {/* Right Column: Appointment Form */}
-          <motion.div 
-            id="booking"
-            className="lg:col-span-4"
-            initial={{ opacity: 0, x: 60 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="glass-card-dark p-6 sm:p-8 rounded-[32px] border border-blue-500/10 shadow-2xl relative overflow-hidden">
-              
-              <AnimatePresence mode="wait">
-                {!formSubmitted ? (
-                  <motion.form 
-                    key="form"
-                    onSubmit={handleSubmit} 
-                    className="flex flex-col gap-4 text-left"
-                    exit={{ opacity: 0, y: -20 }}
-                  >
-                    {/* Header */}
-                    <div className="mb-2">
-                      <h3 className="text-xl font-extrabold text-slate-800 leading-tight">Book Your Appointment</h3>
-                      <p className="text-xs text-slate-400 mt-1">Take the first step towards a healthier smile.</p>
-                    </div>
-
-                    {/* Inputs */}
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="text" 
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Your Full Name" 
-                        className="w-full pl-10 pr-4 py-3 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all placeholder:text-slate-400"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="tel" 
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Phone Number" 
-                        className="w-full pl-10 pr-4 py-3 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all placeholder:text-slate-400"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="email" 
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Email Address" 
-                        className="w-full pl-10 pr-4 py-3 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all placeholder:text-slate-400"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Services Select */}
-                      <div className="relative">
-                        <select 
-                          name="service"
-                          value={formData.service}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-3 py-3 bg-white/60 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all text-slate-500"
-                        >
-                          <option value="">Select Service</option>
-                          <option value="general">General Dentistry</option>
-                          <option value="cosmetic">Cosmetic Dentistry</option>
-                          <option value="implants">Dental Implants</option>
-                          <option value="orthodontics">Orthodontics</option>
-                          <option value="whitening">Teeth Whitening</option>
-                        </select>
-                      </div>
-
-                      {/* Time Select */}
-                      <div className="relative">
-                        <select 
-                          name="time"
-                          value={formData.time}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-3 py-3 bg-white/60 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all text-slate-500"
-                        >
-                          <option value="">Select Time</option>
-                          <option 
-                            value="morning"
-                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 12}
-                          >
-                            Morning
-                          </option>
-                          <option 
-                            value="afternoon"
-                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 17}
-                          >
-                            Afternoon
-                          </option>
-                          <option 
-                            value="evening"
-                            disabled={formData.date === getLocalDateString() && new Date().getHours() >= 20}
-                          >
-                            Evening
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <Calendar className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="date" 
-                        name="date"
-                        value={formData.date}
-                        onChange={handleInputChange}
-                        required
-                        min={getMinDateString()}
-                        className="w-full pl-10 pr-4 py-3 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all text-slate-400"
-                      />
-                    </div>
-
-                    {/* Message Area */}
-                    <div>
-                      <textarea 
-                        name="message"
-                        value={formData.message}
-                        onChange={handleInputChange}
-                        rows="2" 
-                        placeholder="Message (Optional)" 
-                        className="w-full p-4 bg-white/60 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white shadow-sm transition-all placeholder:text-slate-400 resize-none"
-                      />
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="group relative w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center overflow-hidden cursor-pointer"
-                    >
-                      <div className="absolute top-0 -inset-full h-full w-1/2 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white/20 opacity-40 group-hover:animate-shine pointer-events-none" />
-                      
-                      {loading ? (
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <span>Book Appointment</span>
-                      )}
-                    </button>
-                    <p className="text-[10px] text-center text-slate-400">Your information is safe & secure with us.</p>
-
-                  </motion.form>
-                ) : (
-                  <motion.div 
-                    key="success"
-                    className="flex flex-col items-center justify-center py-12 text-center"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 100 }}
-                  >
-                    <CheckCircle className="w-16 h-16 text-emerald-500 mb-6 drop-shadow-md animate-bounce" />
-                    <h3 className="text-2xl font-bold text-slate-800 mb-2">Booking Requested!</h3>
-                    <p className="text-sm text-slate-500 max-w-[260px] leading-relaxed mb-6">
-                      Thank you, <span className="font-semibold text-primary">{formData.name}</span>. Our representative will contact you shortly to confirm your schedule.
-                    </p>
-
-                    <div className="flex flex-col items-center mb-6">
-                      <span className="text-[10px] text-slate-400 font-medium mb-3">Click to call & confirm instantly</span>
-                      
-                      <a 
-                        href="tel:+923214043448" 
-                        className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary-dark hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer mb-3"
-                        title="Call +92 321 4043448"
-                      >
-                        <Phone className="w-6 h-6 fill-white animate-phone-ring" />
-                      </a>
-                      
-                      <span className="text-xs font-bold text-primary tracking-wide">+92 321 4043448</span>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setFormSubmitted(false);
-                        setFormData({ 
-                          name: '', 
-                          phone: '', 
-                          email: '', 
-                          service: '', 
-                          date: getMinDateString(), 
-                          time: getInitialTime(), 
-                          message: '' 
-                        });
-                      }}
-                      className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
-                    >
-                      Book Another
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-            </div>
-          </motion.div>
+          </div>
 
         </div>
 
