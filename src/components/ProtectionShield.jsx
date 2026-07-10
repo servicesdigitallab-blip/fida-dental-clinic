@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react';
 export default function ProtectionShield() {
   const [isTampered, setIsTampered] = useState(false);
   const [isCloned, setIsCloned] = useState(false);
-  const [isProtectedActive, setIsProtectedActive] = useState(false);
-  const [protectionReason, setProtectionReason] = useState(''); // 'capture' or 'inactive' or 'focus-lost'
 
   useEffect(() => {
     // ==============================
@@ -57,31 +55,30 @@ export default function ProtectionShield() {
     const handleContextMenu = (e) => e.preventDefault();
 
     // ==============================
-    // 3. KEYBOARD SHORTCUT BLOCK & FLASH SHIELD
+    // 3. KEYBOARD SHORTCUT BLOCK & SCREENSHOT BLUR
     // ==============================
-    const lockForScreenshot = () => {
-      setProtectionReason('capture');
-      setIsProtectedActive(true);
+    let screenshotBlurTimeout;
+    const triggerScreenshotBlur = () => {
+      document.body.style.filter = 'blur(45px)';
+      document.body.style.transition = 'filter 0.15s ease';
       try { navigator.clipboard?.writeText?.(''); } catch (err) {}
-      
-      // Keep it locked for 3 seconds to guarantee screenshot gets only the black screen
-      setTimeout(() => {
+
+      if (screenshotBlurTimeout) clearTimeout(screenshotBlurTimeout);
+      screenshotBlurTimeout = setTimeout(() => {
+        document.body.style.filter = 'none';
         try { navigator.clipboard?.writeText?.(''); } catch (err) {}
-      }, 400);
-      setTimeout(() => {
-        setIsProtectedActive(false);
       }, 3000);
     };
 
     const handleKeyDown = (e) => {
       if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
         e.preventDefault();
-        lockForScreenshot();
+        triggerScreenshotBlur();
         return false;
       }
       if ((e.metaKey || e.key === 'Meta') && e.shiftKey && (e.key === 'S' || e.key === 's')) {
         e.preventDefault();
-        lockForScreenshot();
+        triggerScreenshotBlur();
         return false;
       }
       if (
@@ -98,7 +95,7 @@ export default function ProtectionShield() {
     const handleKeyUp = (e) => {
       if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
         e.preventDefault();
-        lockForScreenshot();
+        triggerScreenshotBlur();
         return false;
       }
     };
@@ -123,17 +120,15 @@ export default function ProtectionShield() {
     const devToolsInterval = setInterval(detectDevTools, 1000);
 
     // ==============================
-    // 6. FOCUS/BLUR ANTI-CAPTURE (Steals recording view when active window focus changes)
+    // 6. FOCUS/BLUR ANTI-CAPTURE (Blurs screen when user window loses focus or recording starts)
     // ==============================
     const handleBlur = () => {
-      setProtectionReason('focus-lost');
-      setIsProtectedActive(true);
+      document.body.style.filter = 'blur(35px)';
+      document.body.style.transition = 'filter 0.1s ease';
     };
     const handleFocus = () => {
-      // Small timeout to prevent flicker when returning
-      setTimeout(() => {
-        setIsProtectedActive(false);
-      }, 300);
+      document.body.style.filter = 'none';
+      document.body.style.transition = 'filter 0.3s ease';
     };
 
     // ==============================
@@ -141,10 +136,9 @@ export default function ProtectionShield() {
     // ==============================
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setProtectionReason('focus-lost');
-        setIsProtectedActive(true);
+        document.body.style.filter = 'blur(35px)';
       } else {
-        setIsProtectedActive(false);
+        document.body.style.filter = 'none';
       }
     };
 
@@ -152,11 +146,11 @@ export default function ProtectionShield() {
     // 8. MOUSE BOUNDARY PROTECTION
     // ==============================
     const handleMouseLeave = () => {
-      setProtectionReason('focus-lost');
-      setIsProtectedActive(true);
+      document.body.style.filter = 'blur(25px)';
+      document.body.style.transition = 'filter 0.15s ease';
     };
     const handleMouseEnter = () => {
-      setIsProtectedActive(false);
+      document.body.style.filter = 'none';
     };
 
     // ==============================
@@ -164,18 +158,15 @@ export default function ProtectionShield() {
     // ==============================
     let idleTimeout;
     const resetIdleTimer = () => {
-      setIsProtectedActive(current => {
-        // Only dismiss if it was a scroll/activity event triggering it
-        if (current && protectionReason === 'inactive') {
-          return false;
-        }
-        return current;
-      });
+      // Remove blur on user action if not currently blurred by focus/screenshot
+      if (document.hasFocus() && !document.hidden) {
+        document.body.style.filter = 'none';
+        document.body.style.transition = 'filter 0.3s ease';
+      }
 
       if (idleTimeout) clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
-        setProtectionReason('inactive');
-        setIsProtectedActive(true);
+        document.body.style.filter = 'blur(25px)';
       }, 10000); // 10 seconds
     };
     resetIdleTimer();
@@ -192,7 +183,6 @@ export default function ProtectionShield() {
     // ==============================
     console.clear();
     console.log('%c⛔ STOP!', 'color:red;font-size:35px;font-weight:black;');
-    console.log('%cSource code cloning or resource extraction is strictly prohibited.', 'color:gray;font-size:14px;');
 
     // REGISTER EVENT LISTENERS
     window.addEventListener('scroll', resetIdleTimer);
@@ -238,6 +228,7 @@ export default function ProtectionShield() {
       clearInterval(devToolsInterval);
       clearInterval(clipboardInterval);
       if (idleTimeout) clearTimeout(idleTimeout);
+      if (screenshotBlurTimeout) clearTimeout(screenshotBlurTimeout);
       window.removeEventListener('scroll', resetIdleTimer);
       window.removeEventListener('mousemove', resetIdleTimer);
       window.removeEventListener('mousedown', resetIdleTimer);
@@ -257,7 +248,7 @@ export default function ProtectionShield() {
       const s = document.getElementById('fida-shield-css');
       if (s) document.head.removeChild(s);
     };
-  }, [protectionReason]);
+  }, []);
 
   // Unauthorized clone domain nuke screen
   if (isCloned) {
@@ -293,55 +284,6 @@ export default function ProtectionShield() {
         <p className="text-xs text-slate-400 mt-2 max-w-[280px] leading-relaxed">
           Developer tools access is strictly prohibited. This incident has been logged.
         </p>
-      </div>
-    );
-  }
-
-  // Active Protection Sheet overlay (completely blocks UI visibility during screenshot/recording/inactive states)
-  if (isProtectedActive) {
-    return (
-      <div 
-        className="fixed inset-0 z-[999999] bg-slate-950/98 backdrop-blur-xl flex flex-col items-center justify-center text-center p-6 select-none transition-all duration-300"
-        style={{ pointerEvents: 'all' }}
-      >
-        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mb-6 border border-primary/20 shadow-lg shadow-primary/5 animate-pulse">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-          </svg>
-        </div>
-        
-        {protectionReason === 'capture' && (
-          <>
-            <h2 className="text-2xl font-black text-white uppercase tracking-wider font-sans">
-              ⛔ Capture Blocked
-            </h2>
-            <p className="text-sm text-slate-400 mt-3 max-w-[340px] leading-relaxed">
-              Taking screenshots or recording screen on this website is prohibited to protect patient privacy and clinical records.
-            </p>
-          </>
-        )}
-
-        {protectionReason === 'focus-lost' && (
-          <>
-            <h2 className="text-2xl font-black text-white uppercase tracking-wider font-sans">
-              🛡️ Screen Secured
-            </h2>
-            <p className="text-sm text-slate-400 mt-3 max-w-[340px] leading-relaxed">
-              Content is hidden to protect privacy while you are away or using screen capture utilities. Return to focus the window.
-            </p>
-          </>
-        )}
-
-        {protectionReason === 'inactive' && (
-          <>
-            <h2 className="text-xl font-bold text-white uppercase tracking-wider font-sans">
-              💤 Screen Locked
-            </h2>
-            <p className="text-xs text-slate-400 mt-2 max-w-[280px]">
-              Session paused due to inactivity. Move your mouse or scroll to resume.
-            </p>
-          </>
-        )}
       </div>
     );
   }
