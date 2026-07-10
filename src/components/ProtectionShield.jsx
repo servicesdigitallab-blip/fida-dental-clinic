@@ -69,6 +69,23 @@ export default function ProtectionShield() {
       document.body.style.filter = 'none';
     };
 
+    // 6. Idle Scroll Blur Protection (Blurs screen if no scroll activity for 2 seconds)
+    let scrollTimeout;
+    const handleScrollActivity = () => {
+      document.body.style.filter = 'none';
+      document.body.style.transition = 'filter 0.3s ease';
+
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // Apply blur only if not already blocked by inspection/cloning
+        document.body.style.filter = 'blur(20px)';
+      }, 2000);
+    };
+
+    // Trigger scroll check on mount so it blurs if they don't scroll initially
+    handleScrollActivity();
+
+    window.addEventListener('scroll', handleScrollActivity);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
@@ -93,6 +110,8 @@ export default function ProtectionShield() {
 
     return () => {
       clearInterval(interval);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      window.removeEventListener('scroll', handleScrollActivity);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
