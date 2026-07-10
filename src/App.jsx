@@ -8,10 +8,12 @@ import Reviews from './components/Reviews';
 import Team from './components/Team';
 import ChatBot from './components/ChatBot';
 import AppointmentPopup from './components/AppointmentPopup';
+import ProtectionShield from './components/ProtectionShield';
 
 function App() {
   return (
     <>
+      <ProtectionShield />
       <Layout>
         <Hero />
         <Services />
