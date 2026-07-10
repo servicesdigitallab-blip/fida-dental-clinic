@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function ProtectionShield() {
   const [isTampered, setIsTampered] = useState(false);
   const [isCloned, setIsCloned] = useState(false);
-  const canvasRef = useRef(null);
+  const [isProtectedActive, setIsProtectedActive] = useState(false);
+  const [protectionReason, setProtectionReason] = useState(''); // 'capture' or 'inactive' or 'focus-lost'
 
   useEffect(() => {
     // ==============================
@@ -29,7 +30,6 @@ export default function ProtectionShield() {
       } catch (e) {}
     }
 
-    // Also support any local vercel preview or customized branch builds
     if (currentHostname.endsWith('.vercel.app') && currentHostname.includes('fida')) {
       isAuthorized = true;
     }
@@ -59,34 +59,29 @@ export default function ProtectionShield() {
     // ==============================
     // 3. KEYBOARD SHORTCUT BLOCK & FLASH SHIELD
     // ==============================
-    const flashOverlay = document.createElement('div');
-    flashOverlay.id = 'fida-flash-overlay';
-    flashOverlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.05s;';
-    document.body.appendChild(flashOverlay);
-
-    const flashBlack = () => {
-      flashOverlay.style.opacity = '1';
-      document.body.style.filter = 'blur(45px)';
+    const lockForScreenshot = () => {
+      setProtectionReason('capture');
+      setIsProtectedActive(true);
       try { navigator.clipboard?.writeText?.(''); } catch (err) {}
+      
+      // Keep it locked for 3 seconds to guarantee screenshot gets only the black screen
       setTimeout(() => {
         try { navigator.clipboard?.writeText?.(''); } catch (err) {}
-      }, 300);
+      }, 400);
       setTimeout(() => {
-        flashOverlay.style.opacity = '0';
-        document.body.style.filter = 'none';
-      }, 2000);
+        setIsProtectedActive(false);
+      }, 3000);
     };
 
     const handleKeyDown = (e) => {
-      // Intercept PrintScreen / Snipping Keys
       if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
         e.preventDefault();
-        flashBlack();
+        lockForScreenshot();
         return false;
       }
       if ((e.metaKey || e.key === 'Meta') && e.shiftKey && (e.key === 'S' || e.key === 's')) {
         e.preventDefault();
-        flashBlack();
+        lockForScreenshot();
         return false;
       }
       if (
@@ -103,7 +98,7 @@ export default function ProtectionShield() {
     const handleKeyUp = (e) => {
       if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
         e.preventDefault();
-        flashBlack();
+        lockForScreenshot();
         return false;
       }
     };
@@ -128,15 +123,17 @@ export default function ProtectionShield() {
     const devToolsInterval = setInterval(detectDevTools, 1000);
 
     // ==============================
-    // 6. FOCUS/BLUR ANTI-CAPTURE
+    // 6. FOCUS/BLUR ANTI-CAPTURE (Steals recording view when active window focus changes)
     // ==============================
     const handleBlur = () => {
-      document.body.style.filter = 'blur(25px)';
-      document.body.style.transition = 'filter 0.1s ease';
+      setProtectionReason('focus-lost');
+      setIsProtectedActive(true);
     };
     const handleFocus = () => {
-      document.body.style.filter = 'none';
-      document.body.style.transition = 'filter 0.3s ease';
+      // Small timeout to prevent flicker when returning
+      setTimeout(() => {
+        setIsProtectedActive(false);
+      }, 300);
     };
 
     // ==============================
@@ -144,9 +141,10 @@ export default function ProtectionShield() {
     // ==============================
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        document.body.style.filter = 'blur(25px)';
+        setProtectionReason('focus-lost');
+        setIsProtectedActive(true);
       } else {
-        document.body.style.filter = 'none';
+        setIsProtectedActive(false);
       }
     };
 
@@ -154,12 +152,11 @@ export default function ProtectionShield() {
     // 8. MOUSE BOUNDARY PROTECTION
     // ==============================
     const handleMouseLeave = () => {
-      document.body.style.filter = 'blur(20px)';
-      document.body.style.transition = 'filter 0.15s ease';
+      setProtectionReason('focus-lost');
+      setIsProtectedActive(true);
     };
     const handleMouseEnter = () => {
-      document.body.style.filter = 'none';
-      document.body.style.transition = 'filter 0.3s ease';
+      setIsProtectedActive(false);
     };
 
     // ==============================
@@ -167,12 +164,18 @@ export default function ProtectionShield() {
     // ==============================
     let idleTimeout;
     const resetIdleTimer = () => {
-      document.body.style.filter = 'none';
-      document.body.style.transition = 'filter 0.3s ease';
+      setIsProtectedActive(current => {
+        // Only dismiss if it was a scroll/activity event triggering it
+        if (current && protectionReason === 'inactive') {
+          return false;
+        }
+        return current;
+      });
 
       if (idleTimeout) clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
-        document.body.style.filter = 'blur(30px)';
+        setProtectionReason('inactive');
+        setIsProtectedActive(true);
       }, 10000); // 10 seconds
     };
     resetIdleTimer();
@@ -253,67 +256,8 @@ export default function ProtectionShield() {
       document.documentElement.removeEventListener('mouseenter', handleMouseEnter);
       const s = document.getElementById('fida-shield-css');
       if (s) document.head.removeChild(s);
-      const fo = document.getElementById('fida-flash-overlay');
-      if (fo) document.body.removeChild(fo);
     };
-  }, []);
-
-  // ==============================
-  // DYNAMIC RENDER WATERMARK GRID CANVAS (Animates constantly)
-  // ==============================
-  useEffect(() => {
-    if (isTampered || isCloned) return;
-
-    let frameId;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.save();
-      // Rotate the watermark pattern
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(-28 * Math.PI / 180);
-
-      // Micro-shimmer/floating shift calculation to distort captures and recordings
-      const timeOffset = (Date.now() / 25) % 360;
-      const opacity = 0.05 + Math.sin(Date.now() / 300) * 0.015; // Shimmers between 0.035 and 0.065
-
-      ctx.font = '900 11px Inter, sans-serif';
-      ctx.fillStyle = `rgba(15, 23, 42, ${opacity})`;
-      ctx.letterSpacing = '3px';
-
-      const xGap = 350;
-      const yGap = 130;
-
-      for (let x = -canvas.width * 1.5; x < canvas.width * 1.5; x += xGap) {
-        for (let y = -canvas.height * 1.5; y < canvas.height * 1.5; y += yGap) {
-          // Floating pattern displacement
-          ctx.fillText('FIDA DENTAL CLINIC — PROTECTED CONTENT', x + timeOffset, y);
-        }
-      }
-
-      ctx.restore();
-      frameId = requestAnimationFrame(render);
-    };
-    render();
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [isTampered, isCloned]);
+  }, [protectionReason]);
 
   // Unauthorized clone domain nuke screen
   if (isCloned) {
@@ -353,10 +297,54 @@ export default function ProtectionShield() {
     );
   }
 
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden"
-    />
-  );
+  // Active Protection Sheet overlay (completely blocks UI visibility during screenshot/recording/inactive states)
+  if (isProtectedActive) {
+    return (
+      <div 
+        className="fixed inset-0 z-[999999] bg-slate-950/98 backdrop-blur-xl flex flex-col items-center justify-center text-center p-6 select-none transition-all duration-300"
+        style={{ pointerEvents: 'all' }}
+      >
+        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mb-6 border border-primary/20 shadow-lg shadow-primary/5 animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        
+        {protectionReason === 'capture' && (
+          <>
+            <h2 className="text-2xl font-black text-white uppercase tracking-wider font-sans">
+              ⛔ Capture Blocked
+            </h2>
+            <p className="text-sm text-slate-400 mt-3 max-w-[340px] leading-relaxed">
+              Taking screenshots or recording screen on this website is prohibited to protect patient privacy and clinical records.
+            </p>
+          </>
+        )}
+
+        {protectionReason === 'focus-lost' && (
+          <>
+            <h2 className="text-2xl font-black text-white uppercase tracking-wider font-sans">
+              🛡️ Screen Secured
+            </h2>
+            <p className="text-sm text-slate-400 mt-3 max-w-[340px] leading-relaxed">
+              Content is hidden to protect privacy while you are away or using screen capture utilities. Return to focus the window.
+            </p>
+          </>
+        )}
+
+        {protectionReason === 'inactive' && (
+          <>
+            <h2 className="text-xl font-bold text-white uppercase tracking-wider font-sans">
+              💤 Screen Locked
+            </h2>
+            <p className="text-xs text-slate-400 mt-2 max-w-[280px]">
+              Session paused due to inactivity. Move your mouse or scroll to resume.
+            </p>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
