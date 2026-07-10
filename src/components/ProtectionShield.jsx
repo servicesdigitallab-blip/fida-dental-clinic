@@ -2,8 +2,22 @@ import React, { useEffect, useState } from 'react';
 
 export default function ProtectionShield() {
   const [isTampered, setIsTampered] = useState(false);
+  const [isCloned, setIsCloned] = useState(false);
 
   useEffect(() => {
+    // 0. Domain Lock (Self-Destruct on Clone)
+    const allowedHosts = [
+      'localhost',
+      '127.0.0.1',
+      'fidaden.vercel.app',
+      'fida-dental-clinic.vercel.app',
+      'fida-dental.vercel.app'
+    ];
+    if (!allowedHosts.includes(window.location.hostname)) {
+      setIsCloned(true);
+      return;
+    }
+
     // 1. Disable Right Click (Context Menu)
     const handleContextMenu = (e) => {
       e.preventDefault();
@@ -88,6 +102,24 @@ export default function ProtectionShield() {
     };
   }, []);
 
+  if (isCloned) {
+    return (
+      <div className="fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-center text-center p-6 select-none pointer-events-none">
+        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 border border-red-500/20">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376C1.83 14.182 1 12.215 1 10.033V9a8 8 0 0116 0v1.033c0 2.181-.83 4.15-2.197 5.693M12 9v3.75M9 20h6M12 17v3" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-black text-white uppercase tracking-tight font-sans">
+          Unauthorized Hostname Detected
+        </h2>
+        <p className="text-xs text-slate-400 mt-2 max-w-[320px] leading-relaxed">
+          This website has been cloned or hosted on an unauthorized server. Access is suspended.
+        </p>
+      </div>
+    );
+  }
+
   if (isTampered) {
     return (
       <div className="fixed inset-0 z-[999999] bg-slate-900 flex flex-col items-center justify-center text-center p-6 select-none pointer-events-none">
@@ -106,5 +138,13 @@ export default function ProtectionShield() {
     );
   }
 
-  return null;
+  return (
+    <div className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden opacity-[0.03] grid grid-cols-2 sm:grid-cols-4 gap-12 p-8 font-sans font-black text-xs text-slate-900 tracking-widest uppercase">
+      {Array.from({ length: 48 }).map((_, i) => (
+        <div key={i} className="transform rotate-[-30deg] whitespace-nowrap">
+          FIDA DENTAL CLINIC
+        </div>
+      ))}
+    </div>
+  );
 }
