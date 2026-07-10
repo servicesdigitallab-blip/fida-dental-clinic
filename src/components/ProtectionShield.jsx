@@ -45,20 +45,36 @@ export default function ProtectionShield() {
     // ==============================
     // 3. KEYBOARD SHORTCUT BLOCK
     // ==============================
+    // Create a black flash overlay element for screenshot blocking
+    const flashOverlay = document.createElement('div');
+    flashOverlay.id = 'fida-flash-overlay';
+    flashOverlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.05s;';
+    document.body.appendChild(flashOverlay);
+
+    const flashBlack = () => {
+      flashOverlay.style.opacity = '1';
+      document.body.style.filter = 'blur(40px)';
+      try { navigator.clipboard?.writeText?.(''); } catch (err) {}
+      setTimeout(() => {
+        try { navigator.clipboard?.writeText?.(''); } catch (err) {}
+      }, 300);
+      setTimeout(() => {
+        flashOverlay.style.opacity = '0';
+        document.body.style.filter = 'none';
+      }, 2000);
+    };
+
     const handleKeyDown = (e) => {
-      // Block PrintScreen
+      // Block PrintScreen on keydown too (some browsers)
       if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
         e.preventDefault();
-        try { navigator.clipboard?.writeText?.(''); } catch (err) {}
-        document.body.style.filter = 'blur(30px)';
-        setTimeout(() => { document.body.style.filter = 'none'; }, 1500);
+        flashBlack();
         return false;
       }
-      // Block Win+Shift+S (Windows Snip & Sketch) — catches the 's' with meta+shift
+      // Block Win+Shift+S (Windows Snip & Sketch)
       if ((e.metaKey || e.key === 'Meta') && e.shiftKey && (e.key === 'S' || e.key === 's')) {
         e.preventDefault();
-        document.body.style.filter = 'blur(30px)';
-        setTimeout(() => { document.body.style.filter = 'none'; }, 1500);
+        flashBlack();
         return false;
       }
       if (
@@ -68,6 +84,15 @@ export default function ProtectionShield() {
         (e.metaKey && /^[IiUu]$/.test(e.key))
       ) {
         e.preventDefault();
+        return false;
+      }
+    };
+
+    // PrintScreen fires on KEYUP in most browsers — this is critical!
+    const handleKeyUp = (e) => {
+      if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+        e.preventDefault();
+        flashBlack();
         return false;
       }
     };
@@ -179,6 +204,7 @@ export default function ProtectionShield() {
     window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
     window.addEventListener('dragstart', handleDragStart);
     document.addEventListener('copy', handleCopy);
     document.addEventListener('cut', handleCut);
@@ -226,6 +252,7 @@ export default function ProtectionShield() {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
       window.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('cut', handleCut);
@@ -234,6 +261,8 @@ export default function ProtectionShield() {
       document.documentElement.removeEventListener('mouseenter', handleMouseEnter);
       const s = document.getElementById('fida-shield-css');
       if (s) document.head.removeChild(s);
+      const fo = document.getElementById('fida-flash-overlay');
+      if (fo) document.body.removeChild(fo);
     };
   }, []);
 
