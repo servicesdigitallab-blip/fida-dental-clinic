@@ -127,18 +127,29 @@ export default function ProtectionShield() {
     };
 
     // ==============================
-    // 9. IDLE SCROLL BLUR (2 seconds inactivity)
+    // 9. 10-SECOND INACTIVITY AUTO-BLUR
     // ==============================
-    let scrollTimeout;
-    const handleScrollActivity = () => {
+    let idleTimeout;
+    const resetIdleTimer = () => {
+      // Unblur immediately when user shows activity
       document.body.style.filter = 'none';
       document.body.style.transition = 'filter 0.3s ease';
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        document.body.style.filter = 'blur(20px)';
-      }, 2000);
+
+      if (idleTimeout) clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        document.body.style.filter = 'blur(30px)';
+      }, 10000); // 10 seconds
     };
-    handleScrollActivity();
+
+    // Initialize timer
+    resetIdleTimer();
+
+    // Attach listeners for all user activities
+    window.addEventListener('scroll', resetIdleTimer);
+    window.addEventListener('mousemove', resetIdleTimer);
+    window.addEventListener('mousedown', resetIdleTimer);
+    window.addEventListener('keydown', resetIdleTimer);
+    window.addEventListener('touchstart', resetIdleTimer);
 
     // ==============================
     // 10. CLIPBOARD CLEARING LOOP (Wipe clipboard every 2 seconds)
@@ -163,7 +174,7 @@ export default function ProtectionShield() {
     // ==============================
     // REGISTER ALL EVENT LISTENERS
     // ==============================
-    window.addEventListener('scroll', handleScrollActivity);
+    window.addEventListener('scroll', resetIdleTimer);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
@@ -205,8 +216,12 @@ export default function ProtectionShield() {
     return () => {
       clearInterval(devToolsInterval);
       clearInterval(clipboardInterval);
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-      window.removeEventListener('scroll', handleScrollActivity);
+      if (idleTimeout) clearTimeout(idleTimeout);
+      window.removeEventListener('scroll', resetIdleTimer);
+      window.removeEventListener('mousemove', resetIdleTimer);
+      window.removeEventListener('mousedown', resetIdleTimer);
+      window.removeEventListener('keydown', resetIdleTimer);
+      window.removeEventListener('touchstart', resetIdleTimer);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
