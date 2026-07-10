@@ -13,11 +13,17 @@ export default function ProtectionShield() {
     const handleKeyDown = (e) => {
       if (
         e.key === 'F12' ||
+        e.key === 'PrintScreen' ||
+        e.key === 'Snapshot' ||
         (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c' || e.key === 'K' || e.key === 'k')) ||
         (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's' || e.key === 'A' || e.key === 'a' || e.key === 'C' || e.key === 'c' || e.key === 'P' || e.key === 'p')) ||
         (e.metaKey && (e.key === 'Option' || e.key === 'I' || e.key === 'i' || e.key === 'U' || e.key === 'u'))
       ) {
         e.preventDefault();
+        if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+          try { navigator.clipboard?.writeText?.(''); } catch(err) {}
+          setIsTampered(true);
+        }
         return false;
       }
     };
@@ -30,11 +36,8 @@ export default function ProtectionShield() {
     // 4. DevTools Detection Loop (Using Debugger statement)
     const detectDevTools = () => {
       const startTime = Date.now();
-      // debugger statement pauses execution only if DevTools is open
       debugger; 
       const endTime = Date.now();
-      
-      // If execution was paused (meaning DevTools is open), the elapsed time will be high
       if (endTime - startTime > 100) {
         setIsTampered(true);
       }
@@ -43,7 +46,17 @@ export default function ProtectionShield() {
     // Run DevTools detection every 500ms
     const interval = setInterval(detectDevTools, 500);
 
-    // Register event listeners
+    // 5. Focus/Blur anti-capture protection (Blurs screen when user shifts focus or snipping tool activates)
+    const handleBlur = () => {
+      document.body.style.filter = 'blur(20px)';
+      document.body.style.transition = 'filter 0.15s ease';
+    };
+    const handleFocus = () => {
+      document.body.style.filter = 'none';
+    };
+
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('dragstart', handleDragStart);
@@ -66,6 +79,8 @@ export default function ProtectionShield() {
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('dragstart', handleDragStart);
