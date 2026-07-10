@@ -5,7 +5,9 @@ export default function ProtectionShield() {
   const [isCloned, setIsCloned] = useState(false);
 
   useEffect(() => {
-    // 0. Domain Lock (Self-Destruct on Clone)
+    // ==============================
+    // 0. DOMAIN LOCK (Self-Destruct)
+    // ==============================
     const allowedHosts = [
       'localhost',
       '127.0.0.1',
@@ -13,87 +15,171 @@ export default function ProtectionShield() {
       'fida-dental-clinic.vercel.app',
       'fida-dental.vercel.app'
     ];
-    if (!allowedHosts.includes(window.location.hostname)) {
+    const currentHost = window.location.hostname;
+    // Also allow any *.vercel.app subdomain containing "fida"
+    const isVercelFida = currentHost.endsWith('.vercel.app') && currentHost.includes('fida');
+    if (!allowedHosts.includes(currentHost) && !isVercelFida) {
       setIsCloned(true);
+      // Nuke the DOM so scrapers get nothing
+      document.body.innerHTML = '';
       return;
     }
 
-    // 1. Disable Right Click (Context Menu)
-    const handleContextMenu = (e) => {
-      e.preventDefault();
-    };
+    // ==============================
+    // 1. IFRAME BUSTING
+    // ==============================
+    if (window.self !== window.top) {
+      // We are inside an iframe — break out or destroy
+      try { window.top.location = window.self.location; } catch (e) {
+        setIsCloned(true);
+        document.body.innerHTML = '';
+        return;
+      }
+    }
 
-    // 2. Disable Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+A, Ctrl+C)
+    // ==============================
+    // 2. RIGHT-CLICK DISABLED
+    // ==============================
+    const handleContextMenu = (e) => e.preventDefault();
+
+    // ==============================
+    // 3. KEYBOARD SHORTCUT BLOCK
+    // ==============================
     const handleKeyDown = (e) => {
+      // Block PrintScreen
+      if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+        e.preventDefault();
+        try { navigator.clipboard?.writeText?.(''); } catch (err) {}
+        document.body.style.filter = 'blur(30px)';
+        setTimeout(() => { document.body.style.filter = 'none'; }, 1500);
+        return false;
+      }
+      // Block Win+Shift+S (Windows Snip & Sketch) — catches the 's' with meta+shift
+      if ((e.metaKey || e.key === 'Meta') && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        document.body.style.filter = 'blur(30px)';
+        setTimeout(() => { document.body.style.filter = 'none'; }, 1500);
+        return false;
+      }
       if (
         e.key === 'F12' ||
-        e.key === 'PrintScreen' ||
-        e.key === 'Snapshot' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c' || e.key === 'K' || e.key === 'k')) ||
-        (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's' || e.key === 'A' || e.key === 'a' || e.key === 'C' || e.key === 'c' || e.key === 'P' || e.key === 'p')) ||
-        (e.metaKey && (e.key === 'Option' || e.key === 'I' || e.key === 'i' || e.key === 'U' || e.key === 'u'))
+        (e.ctrlKey && e.shiftKey && /^[IJCKijck]$/.test(e.key)) ||
+        (e.ctrlKey && /^[USACPusacp]$/.test(e.key)) ||
+        (e.metaKey && /^[IiUu]$/.test(e.key))
       ) {
         e.preventDefault();
-        if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
-          try { navigator.clipboard?.writeText?.(''); } catch(err) {}
-          setIsTampered(true);
-        }
         return false;
       }
     };
 
-    // 3. Prevent Drag and Drop of Images/Content
-    const handleDragStart = (e) => {
-      e.preventDefault();
-    };
+    // ==============================
+    // 4. DRAG & DROP BLOCK
+    // ==============================
+    const handleDragStart = (e) => e.preventDefault();
+    const handleCopy = (e) => e.preventDefault();
+    const handleCut = (e) => e.preventDefault();
 
-    // 4. DevTools Detection Loop (Using Debugger statement)
+    // ==============================
+    // 5. DEVTOOLS DETECTION
+    // ==============================
     const detectDevTools = () => {
-      const startTime = Date.now();
-      debugger; 
-      const endTime = Date.now();
-      if (endTime - startTime > 100) {
-        setIsTampered(true);
-      }
+      const el = new Image();
+      Object.defineProperty(el, 'id', {
+        get: () => { setIsTampered(true); }
+      });
+      console.log('%c', el);
     };
+    const devToolsInterval = setInterval(detectDevTools, 1000);
 
-    // Run DevTools detection every 500ms
-    const interval = setInterval(detectDevTools, 500);
-
-    // 5. Focus/Blur anti-capture protection (Blurs screen when user shifts focus or snipping tool activates)
+    // ==============================
+    // 6. FOCUS/BLUR ANTI-CAPTURE
+    // ==============================
     const handleBlur = () => {
-      document.body.style.filter = 'blur(20px)';
-      document.body.style.transition = 'filter 0.15s ease';
+      document.body.style.filter = 'blur(25px)';
+      document.body.style.transition = 'filter 0.1s ease';
     };
     const handleFocus = () => {
       document.body.style.filter = 'none';
+      document.body.style.transition = 'filter 0.3s ease';
     };
 
-    // 6. Idle Scroll Blur Protection (Blurs screen if no scroll activity for 2 seconds)
+    // ==============================
+    // 7. PAGE VISIBILITY API (Tab Switch / Minimize)
+    // ==============================
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        document.body.style.filter = 'blur(25px)';
+      } else {
+        document.body.style.filter = 'none';
+      }
+    };
+
+    // ==============================
+    // 8. MOUSE LEAVE WINDOW (Cursor exits browser — snipping tool, etc.)
+    // ==============================
+    const handleMouseLeave = () => {
+      document.body.style.filter = 'blur(20px)';
+      document.body.style.transition = 'filter 0.15s ease';
+    };
+    const handleMouseEnter = () => {
+      document.body.style.filter = 'none';
+      document.body.style.transition = 'filter 0.3s ease';
+    };
+
+    // ==============================
+    // 9. IDLE SCROLL BLUR (2 seconds inactivity)
+    // ==============================
     let scrollTimeout;
     const handleScrollActivity = () => {
       document.body.style.filter = 'none';
       document.body.style.transition = 'filter 0.3s ease';
-
       if (scrollTimeout) clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        // Apply blur only if not already blocked by inspection/cloning
         document.body.style.filter = 'blur(20px)';
       }, 2000);
     };
-
-    // Trigger scroll check on mount so it blurs if they don't scroll initially
     handleScrollActivity();
 
+    // ==============================
+    // 10. CLIPBOARD CLEARING LOOP (Wipe clipboard every 2 seconds)
+    // ==============================
+    const clipboardInterval = setInterval(() => {
+      try { navigator.clipboard?.writeText?.(''); } catch (err) {}
+    }, 2000);
+
+    // ==============================
+    // 11. CONSOLE CLEAR + WARNING
+    // ==============================
+    console.clear();
+    console.log(
+      '%c⛔ STOP! This is a protected website.',
+      'color:red;font-size:30px;font-weight:bold;'
+    );
+    console.log(
+      '%cSource code inspection is strictly prohibited. All activity is monitored.',
+      'color:gray;font-size:14px;'
+    );
+
+    // ==============================
+    // REGISTER ALL EVENT LISTENERS
+    // ==============================
     window.addEventListener('scroll', handleScrollActivity);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.documentElement.addEventListener('mouseleave', handleMouseLeave);
+    document.documentElement.addEventListener('mouseenter', handleMouseEnter);
 
-    // Apply CSS to prevent text selection globally
+    // ==============================
+    // INJECT GLOBAL CSS PROTECTION
+    // ==============================
     const style = document.createElement('style');
+    style.id = 'fida-shield-css';
     style.innerHTML = `
       * {
         -webkit-user-select: none !important;
@@ -101,69 +187,95 @@ export default function ProtectionShield() {
         -ms-user-select: none !important;
         user-select: none !important;
         -webkit-user-drag: none !important;
+        -webkit-touch-callout: none !important;
+      }
+      img, video, canvas, svg {
+        pointer-events: none !important;
+        -webkit-user-drag: none !important;
       }
       @media print {
-        body { display: none !important; }
+        html, body { display: none !important; visibility: hidden !important; }
       }
     `;
     document.head.appendChild(style);
 
+    // ==============================
+    // CLEANUP
+    // ==============================
     return () => {
-      clearInterval(interval);
+      clearInterval(devToolsInterval);
+      clearInterval(clipboardInterval);
       if (scrollTimeout) clearTimeout(scrollTimeout);
       window.removeEventListener('scroll', handleScrollActivity);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('dragstart', handleDragStart);
-      document.head.removeChild(style);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('cut', handleCut);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.documentElement.removeEventListener('mouseleave', handleMouseLeave);
+      document.documentElement.removeEventListener('mouseenter', handleMouseEnter);
+      const s = document.getElementById('fida-shield-css');
+      if (s) document.head.removeChild(s);
     };
   }, []);
 
+  // ==============================
+  // RENDER: CLONE BLOCK SCREEN
+  // ==============================
   if (isCloned) {
     return (
-      <div className="fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-center text-center p-6 select-none pointer-events-none">
+      <div className="fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center text-center p-6 select-none" style={{ pointerEvents: 'all' }}>
         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 border border-red-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376C1.83 14.182 1 12.215 1 10.033V9a8 8 0 0116 0v1.033c0 2.181-.83 4.15-2.197 5.693M12 9v3.75M9 20h6M12 17v3" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
           </svg>
         </div>
         <h2 className="text-xl font-black text-white uppercase tracking-tight font-sans">
-          Unauthorized Hostname Detected
+          ⛔ Unauthorized Access
         </h2>
         <p className="text-xs text-slate-400 mt-2 max-w-[320px] leading-relaxed">
-          This website has been cloned or hosted on an unauthorized server. Access is suspended.
+          This website is licensed exclusively to FIDA DENTAL CLINIC. Hosting on unauthorized servers is strictly prohibited and monitored.
         </p>
       </div>
     );
   }
 
+  // ==============================
+  // RENDER: DEVTOOLS TAMPER BLOCK
+  // ==============================
   if (isTampered) {
     return (
-      <div className="fixed inset-0 z-[999999] bg-slate-900 flex flex-col items-center justify-center text-center p-6 select-none pointer-events-none">
+      <div className="fixed inset-0 z-[999999] bg-slate-900 flex flex-col items-center justify-center text-center p-6 select-none" style={{ pointerEvents: 'all' }}>
         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 border border-red-500/20 animate-pulse">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
           </svg>
         </div>
         <h2 className="text-xl font-black text-white uppercase tracking-tight font-sans">
-          Security Alert: Inspection Detected
+          🛡️ Security Alert: Inspection Detected
         </h2>
         <p className="text-xs text-slate-400 mt-2 max-w-[280px] leading-relaxed">
-          Source code inspection and developer tools access is strictly prohibited on this website for security reasons.
+          Developer tools access is strictly prohibited. This incident has been logged.
         </p>
       </div>
     );
   }
 
+  // ==============================
+  // RENDER: WATERMARK OVERLAY (visible in screenshots/recordings)
+  // ==============================
   return (
-    <div className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden opacity-[0.06] grid grid-cols-2 sm:grid-cols-4 gap-12 p-8 font-sans font-black text-xs text-slate-900 tracking-widest uppercase">
-      {Array.from({ length: 48 }).map((_, i) => (
-        <div key={i} className="transform rotate-[-30deg] whitespace-nowrap">
-          FIDA DENTAL CLINIC
-        </div>
-      ))}
+    <div className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden opacity-[0.06]" style={{ transform: 'rotate(-30deg)', transformOrigin: 'center center' }}>
+      <div className="absolute inset-[-50%] flex flex-wrap gap-16 p-8 font-sans font-black text-[11px] text-slate-900 tracking-[0.3em] uppercase leading-loose">
+        {Array.from({ length: 120 }).map((_, i) => (
+          <div key={i} className="whitespace-nowrap px-8">
+            FIDA DENTAL CLINIC — PROTECTED CONTENT
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
