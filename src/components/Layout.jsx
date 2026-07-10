@@ -715,54 +715,116 @@ export default function Layout({ children }) {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-slate-900 text-slate-400 py-16 px-6 lg:px-16 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+      <footer className="relative z-10 bg-slate-950 text-slate-400 py-20 px-6 lg:px-16 border-t border-slate-900 overflow-hidden">
+        {/* Glow backdrop blobs */}
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        {/* Glow Top Accent Line */}
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 relative z-10">
           {/* Brand Info */}
-          <div className="flex flex-col gap-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="flex flex-col gap-4"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-primary">
                   <path d="M12 2C8.5 2 6 4.5 6 8c0 3.5 2.5 5 4 8.5 1 2.3.5 3.5 2 3.5s1-1.2 2-3.5c1.5-3.5 4-5 4-8.5 0-3.5-2.5-6-6-6zm0 8.5c-.8 0-1.5-.7-1.5-1.5S11.2 7.5 12 7.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5z" />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-white tracking-tight">FIDA DENTAL CLINIC</span>
+              <span className="text-xl font-black text-white tracking-tight">FIDA DENTAL CLINIC</span>
             </div>
-            <p className="text-sm text-slate-400">Creating beautifully confident smiles using state-of-the-art dental technology and personalized premium treatments.</p>
-          </div>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-[280px]">
+              Creating beautifully confident smiles using state-of-the-art dental technology and personalized premium treatments.
+            </p>
+          </motion.div>
+
           {/* Quick Links */}
-          <div>
-            <h4 className="text-white font-bold mb-4">Quick Links</h4>
-            <ul className="flex flex-col gap-2.5 text-sm">
-              <li><a href="#about" className="hover:text-primary transition-colors">About Practice</a></li>
-              <li><a href="#services" className="hover:text-primary transition-colors">Treatments & Services</a></li>
-              <li><a href="#transformations" className="hover:text-primary transition-colors">Before & After Gallery</a></li>
-              <li><a href="#team" className="hover:text-primary transition-colors">Expert Team</a></li>
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <h4 className="text-white font-bold mb-5 text-sm tracking-wider uppercase">Quick Links</h4>
+            <ul className="flex flex-col gap-3 text-xs">
+              <li>
+                <a href="#about" className="hover:text-primary transition-colors flex items-center gap-1.5 group">
+                  <ArrowRight className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  <span>About Practice</span>
+                </a>
+              </li>
+              <li>
+                <a href="#services" className="hover:text-primary transition-colors flex items-center gap-1.5 group">
+                  <ArrowRight className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  <span>Treatments & Services</span>
+                </a>
+              </li>
+              <li>
+                <a href="#transformations" className="hover:text-primary transition-colors flex items-center gap-1.5 group">
+                  <ArrowRight className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  <span>Before & After Gallery</span>
+                </a>
+              </li>
+              <li>
+                <a href="#team" className="hover:text-primary transition-colors flex items-center gap-1.5 group">
+                  <ArrowRight className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  <span>Expert Team</span>
+                </a>
+              </li>
             </ul>
-          </div>
+          </motion.div>
+
           {/* Hours */}
-          <div>
-            <h4 className="text-white font-bold mb-4">Working Hours</h4>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li>Monday - Friday: 9:00 AM - 7:00 PM</li>
-              <li>Saturday: 10:00 AM - 4:00 PM</li>
-              <li>Sunday: Emergency Cases Only</li>
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
+            <h4 className="text-white font-bold mb-5 text-sm tracking-wider uppercase">Working Hours</h4>
+            <ul className="flex flex-col gap-3 text-xs">
+              <li className="flex items-center gap-2 text-primary font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Open 24/7 Every Day</span>
+              </li>
+              <li>Monday - Sunday: 24 Hours Open</li>
+              <li>Holidays: Emergency & General open</li>
             </ul>
-          </div>
+          </motion.div>
+
           {/* Contact */}
-          <div>
-            <h4 className="text-white font-bold mb-4">Clinic Address</h4>
-            <p className="text-sm leading-relaxed">
+          <motion.div 
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col gap-4"
+          >
+            <h4 className="text-white font-bold mb-1 text-sm tracking-wider uppercase">Clinic Address</h4>
+            <p className="text-xs leading-relaxed max-w-[240px]">
               12A, Premium Health Square,<br />
               Phase 5, DHA, Lahore, Pakistan
             </p>
-            <div className="mt-4 text-white font-semibold flex items-center gap-2">
-              <Phone className="w-4 h-4 text-primary" />
-              <span>+92 321 4043448</span>
+            <div className="mt-2 py-3 px-4 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center gap-3 w-fit select-none">
+              <Phone className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-white text-xs font-bold font-sans">+92 321 4043448</span>
             </div>
-          </div>
+          </motion.div>
         </div>
-        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-          <p>© 2026 FIDA DENTAL CLINIC. Designed with cinematic experience. All rights reserved.</p>
+
+        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 relative z-10">
+          <p>© 2026 FIDA DENTAL CLINIC. Protected by High-Security Protection Shield. All rights reserved.</p>
+          <div className="flex items-center gap-1.5 text-slate-400 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span>SSL Secured Encryption</span>
+          </div>
         </div>
       </footer>
     </div>

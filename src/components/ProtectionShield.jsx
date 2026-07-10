@@ -158,7 +158,7 @@ export default function ProtectionShield() {
   }
 
   return (
-    <div className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden opacity-[0.03] grid grid-cols-2 sm:grid-cols-4 gap-12 p-8 font-sans font-black text-xs text-slate-900 tracking-widest uppercase">
+    <div className="fixed inset-0 z-[9995] pointer-events-none select-none overflow-hidden opacity-[0.06] grid grid-cols-2 sm:grid-cols-4 gap-12 p-8 font-sans font-black text-xs text-slate-900 tracking-widest uppercase">
       {Array.from({ length: 48 }).map((_, i) => (
         <div key={i} className="transform rotate-[-30deg] whitespace-nowrap">
           FIDA DENTAL CLINIC
