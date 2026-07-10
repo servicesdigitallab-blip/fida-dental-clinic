@@ -169,6 +169,8 @@ export default function Team() {
                     <img 
                       src={doc.image} 
                       alt={doc.name} 
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)]"
                     />
 
@@ -305,6 +307,8 @@ export default function Team() {
               <img 
                 src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=300" 
                 alt="Clinic Room Preview" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>

@@ -146,6 +146,8 @@ export default function Hero() {
                   key={i} 
                   src={src} 
                   alt="Patient Avatar" 
+                  loading="lazy"
+                  decoding="async"
                   className="w-10 h-10 rounded-full border-2 border-white object-cover" 
                 />
               ))}
@@ -186,6 +188,9 @@ export default function Hero() {
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             src="/dentist_hero.png" 
             alt="3D Dentist FIDA DENTAL CLINIC" 
+            loading="eager"
+            fetchpriority="high"
+            decoding="sync"
             className="absolute bottom-4 max-h-[110%] object-contain drop-shadow-[0_20px_50px_rgba(0,102,255,0.25)] select-none pointer-events-none z-10"
           />
 

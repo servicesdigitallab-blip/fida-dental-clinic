@@ -132,6 +132,8 @@ function SliderCard({ title, description, beforeImage, afterImage, icon }) {
         <img 
           src={afterImage} 
           alt="After treatment" 
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
         <div className="absolute bottom-3 right-4 bg-primary text-white font-extrabold text-[9px] uppercase tracking-wider px-3 py-1 rounded-full z-20 shadow-sm pointer-events-none">
@@ -146,6 +148,8 @@ function SliderCard({ title, description, beforeImage, afterImage, icon }) {
           <img 
             src={beforeImage} 
             alt="Before treatment" 
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
         </div>

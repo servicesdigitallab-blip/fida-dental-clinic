@@ -153,6 +153,8 @@ export default function Services() {
                     <img 
                       src={service.image} 
                       alt={service.title} 
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)]"
                     />
 

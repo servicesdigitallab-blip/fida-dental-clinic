@@ -174,6 +174,8 @@ export default function WhyChooseUs() {
             <img 
               src="/dentist_thumbs.png" 
               alt="Thumbs Up Dentist" 
+              loading="lazy"
+              decoding="async"
               className="absolute bottom-0 max-h-[105%] object-contain drop-shadow-[0_20px_40px_rgba(0,102,255,0.2)] animate-float"
             />
           </motion.div>
