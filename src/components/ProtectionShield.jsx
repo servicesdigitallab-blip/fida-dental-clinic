@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 export default function ProtectionShield() {
   const [isTampered, setIsTampered] = useState(false);
   const [isCloned, setIsCloned] = useState(false);
-  const [isFullBlurActive, setIsFullBlurActive] = useState(false);
 
   useEffect(() => {
     // ==============================
@@ -60,12 +59,13 @@ export default function ProtectionShield() {
     // ==============================
     let screenshotBlurTimeout;
     const triggerScreenshotBlur = () => {
-      setIsFullBlurActive(true);
+      document.body.style.filter = 'blur(45px)';
+      document.body.style.transition = 'filter 0.15s ease';
       try { navigator.clipboard?.writeText?.(''); } catch (err) {}
 
       if (screenshotBlurTimeout) clearTimeout(screenshotBlurTimeout);
       screenshotBlurTimeout = setTimeout(() => {
-        setIsFullBlurActive(false);
+        document.body.style.filter = 'none';
         try { navigator.clipboard?.writeText?.(''); } catch (err) {}
       }, 3000);
     };
@@ -123,10 +123,12 @@ export default function ProtectionShield() {
     // 6. FOCUS/BLUR ANTI-CAPTURE (Blurs screen when user window loses focus or recording starts)
     // ==============================
     const handleBlur = () => {
-      setIsFullBlurActive(true);
+      document.body.style.filter = 'blur(35px)';
+      document.body.style.transition = 'filter 0.1s ease';
     };
     const handleFocus = () => {
-      setIsFullBlurActive(false);
+      document.body.style.filter = 'none';
+      document.body.style.transition = 'filter 0.3s ease';
     };
 
     // ==============================
@@ -134,34 +136,21 @@ export default function ProtectionShield() {
     // ==============================
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setIsFullBlurActive(true);
+        document.body.style.filter = 'blur(35px)';
       } else {
-        setIsFullBlurActive(false);
+        document.body.style.filter = 'none';
       }
     };
 
     // ==============================
-    // 8. MOUSE BOUNDARY PROTECTION & SPOTLIGHT COORDINATES
+    // 8. MOUSE BOUNDARY PROTECTION
     // ==============================
-    const handleMouseMove = (e) => {
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-      resetIdleTimer();
-    };
-
-    const handleTouchMove = (e) => {
-      if (e.touches && e.touches[0]) {
-        document.documentElement.style.setProperty('--mouse-x', `${e.touches[0].clientX}px`);
-        document.documentElement.style.setProperty('--mouse-y', `${e.touches[0].clientY}px`);
-      }
-      resetIdleTimer();
-    };
-
     const handleMouseLeave = () => {
-      setIsFullBlurActive(true);
+      document.body.style.filter = 'blur(25px)';
+      document.body.style.transition = 'filter 0.15s ease';
     };
     const handleMouseEnter = () => {
-      setIsFullBlurActive(false);
+      document.body.style.filter = 'none';
     };
 
     // ==============================
@@ -169,11 +158,15 @@ export default function ProtectionShield() {
     // ==============================
     let idleTimeout;
     const resetIdleTimer = () => {
-      setIsFullBlurActive(false);
+      // Remove blur on user action if not currently blurred by focus/screenshot
+      if (document.hasFocus() && !document.hidden) {
+        document.body.style.filter = 'none';
+        document.body.style.transition = 'filter 0.3s ease';
+      }
 
       if (idleTimeout) clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
-        setIsFullBlurActive(true);
+        document.body.style.filter = 'blur(25px)';
       }, 10000); // 10 seconds
     };
     resetIdleTimer();
@@ -189,18 +182,19 @@ export default function ProtectionShield() {
     // 11. CONSOLE SECURITY WARNING
     // ==============================
     console.clear();
+    console.log('%c⛔ STOP!', 'color:red;font-size:35px;font-weight:black;');
 
     // REGISTER EVENT LISTENERS
     window.addEventListener('scroll', resetIdleTimer);
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', resetIdleTimer);
     window.addEventListener('mousedown', resetIdleTimer);
-    window.addEventListener('keydown', handleKeyDown, true);
-    window.addEventListener('keyup', handleKeyUp, true);
+    window.addEventListener('keydown', resetIdleTimer);
     window.addEventListener('touchstart', resetIdleTimer);
-    window.addEventListener('touchmove', handleTouchMove);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
     window.addEventListener('dragstart', handleDragStart);
     document.addEventListener('copy', handleCopy);
     document.addEventListener('cut', handleCut);
@@ -236,15 +230,15 @@ export default function ProtectionShield() {
       if (idleTimeout) clearTimeout(idleTimeout);
       if (screenshotBlurTimeout) clearTimeout(screenshotBlurTimeout);
       window.removeEventListener('scroll', resetIdleTimer);
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', resetIdleTimer);
       window.removeEventListener('mousedown', resetIdleTimer);
-      window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('keyup', handleKeyUp, true);
+      window.removeEventListener('keydown', resetIdleTimer);
       window.removeEventListener('touchstart', resetIdleTimer);
-      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
       window.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('cut', handleCut);
@@ -294,21 +288,5 @@ export default function ProtectionShield() {
     );
   }
 
-  return (
-    <div 
-      className="fixed inset-0 z-[9990] pointer-events-none select-none overflow-hidden transition-all duration-300"
-      style={{
-        background: 'rgba(15, 23, 42, 0.05)',
-        backdropFilter: isFullBlurActive ? 'blur(35px)' : 'blur(28px)',
-        WebkitBackdropFilter: isFullBlurActive ? 'blur(35px)' : 'blur(28px)',
-        // Apply CSS mask: transparent at cursor spotlight, opaque blur everywhere else
-        maskImage: isFullBlurActive 
-          ? 'none' 
-          : 'radial-gradient(circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%), transparent 100%, black 100%)',
-        WebkitMaskImage: isFullBlurActive 
-          ? 'none' 
-          : 'radial-gradient(circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%), transparent 100%, black 100%)'
-      }}
-    />
-  );
+  return null;
 }
